@@ -42,9 +42,19 @@ module.exports={
 					"Service": "apigateway.amazonaws.com"
 				},
 				"Action": "sts:AssumeRole"
-            },
-            
-        {
+            }
+          ]
+        },
+        "Path": "/",
+        "ManagedPolicyArns": [{"Ref":"S3AccessPolicy"}]
+      }
+    },
+    "S3AccessPolicy":{
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
               "Effect": "Allow",
               "Action": [
                 "lex:*"
@@ -78,11 +88,8 @@ module.exports={
                 {"Fn::Sub":"arn:aws:s3:::${ImportBucket}/*"},
                 {"Fn::Sub":"arn:aws:s3:::${ExportBucket}/*"}
               ]
-            }
-            
-          ]
-        },
-        "Path": "/"
+            }]
+        }
       }
     }
 }
