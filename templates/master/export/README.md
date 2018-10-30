@@ -1,2 +1,2 @@
-# Bulk Document Import
-lambda for importing documents into es
+# Bulk Document Export
+lambda for exporting documents from es
