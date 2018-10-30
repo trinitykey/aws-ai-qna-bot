@@ -32,32 +32,20 @@ module.exports=Object.assign(
                 "Service": "apigateway.amazonaws.com"
               },
               "Action": "sts:AssumeRole"
-            }
-          ]
-        },
-        "Path": "/",
-        "ManagedPolicyArns": [
-          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-          {"Ref":"LambdaPolicy"}
-        ]
-      }
-},
-"LambdaPolicy": {
-  "Type": "AWS::IAM::ManagedPolicy",
-  "Properties": {
-    "PolicyDocument": {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
+            },
+          {
           "Effect": "Allow",
           "Action": [
             "lambda:*"
           ],
           "Resource":["*"]
-        }
-      ]
-    }
-  }
+          }
+          ]
+        },
+        "Path": "/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"        ]
+      }
 }
 })
 

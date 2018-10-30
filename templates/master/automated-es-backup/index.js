@@ -10,7 +10,7 @@ module.exports=Object.assign(
         "State" : "ENABLED",
         "Targets" : [{"Arn" : {"Fn::GetAtt":["AutomatedBackupLambda","Arn"]},
                         "Id" : {"Fn::Join":["",["QnABot-Backup-","AWS::StackName"]]},
-                        "RoleArn" : {"Fn:GetAtt":["CloudWatchEventsBackupRole","Arn"]},}]
+                        "RoleArn" : {"Fn::GetAtt":["CloudWatchEventsBackupRole","Arn"]},}]
       }
     },
     "CloudWatchEventsBackupRole":{

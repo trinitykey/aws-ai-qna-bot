@@ -73,35 +73,26 @@ module.exports=Object.assign(
                 "Service": "lambda.amazonaws.com"
               },
               "Action": "sts:AssumeRole"
-            }
-          ]
-        },
-        "Path": "/",
-        "ManagedPolicyArns": [
-          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-          {"Ref":"ImportPolicy"}
-        ]
-      }
-    },
-    "ImportPolicy": {
-      "Type": "AWS::IAM::ManagedPolicy",
-      "Properties": {
-        "PolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [{
+            },
+            {
               "Effect": "Allow",
               "Action": [
                 "s3:*"
               ],
               "Resource":[{"Fn::Sub":"arn:aws:s3:::${ImportBucket}*"}]
-          },{
+            },
+            {
               "Effect": "Allow",
               "Action": [
                 "lambda:InvokeFunction"
               ],
               "Resource":[{"Fn::GetAtt":["ESProxyLambda","Arn"]}]
-          }]
-        }
+            }
+          ]
+        },
+        "Path": "/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"        ]
       }
     }
 })
