@@ -161,6 +161,13 @@ module.exports={
                     maxLength:100,
                     propertyOrder:10
                 },
+                clientFilterValues:{
+                    title:"Client Filters: Values (prototype)",
+                    description:"Enter list of terms. When specified, client must provide N matching terms in request session attribute 'QNAClientFilter' for this answer to be eligible for the response",
+                    type:"string",
+                    maxLength:100,
+                    propertyOrder:10
+                }
             },
             required:["qid","q","a"]
         }
@@ -193,7 +200,7 @@ module.exports={
         },
         l:{
             type:"keyword"
-        }
+        },
     }
 }
                 

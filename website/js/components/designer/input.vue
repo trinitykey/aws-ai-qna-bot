@@ -1,7 +1,7 @@
 <template lang="pug">
   div.input
     v-text-field(
-      v-if="schema.type==='string' || schema.type==='text'"
+      v-if="schema.type==='string' || schema.type==='text' "
       :label="schema.title"
       :hint="schema.description"
       persistent-hint
@@ -14,6 +14,17 @@
       @update:error="setValid"
       auto-grow
       :counter="schema.maxLength"
+    )
+    v-text-field(
+      v-if="schema.type==='number'"
+      :label="schema.title"
+      :hint="schema.description"
+      persistent-hint
+      :required="required"
+      v-model.number="local"
+      :id='id' :data-vv-name='id'
+      :type="number"
+      :data-path="path"
     )
     div(v-if="schema.type==='array'")
       .subheading {{schema.title}}

@@ -25,6 +25,36 @@ function build_query(params) {
     			}
             );          
         } 
+        if (_.get(params, 'enable_client_filters', "false").toLowerCase() === "true") {
+            var qnaClientFilter = _.get(params, 'qnaClientFilter', "") ;
+            query = query.orFilter(
+                'bool', {
+                    "must": [
+                        {
+                            "exists": {
+                              "field": "clientFilterValues"
+                                }
+                        },
+                        {
+                            "term": {
+                              "clientFilterValues": qnaClientFilter
+                            }
+                        }
+                    ]
+                }
+            )
+    		.orFilter(
+                'bool', {
+                   "must_not": [
+                        {
+                            "exists": {
+                              "field": "clientFilterValues"
+                            }
+                        }
+                    ]
+                }
+            );
+        }
         query = query.orQuery(
             'nested',{
             score_mode:'sum',
@@ -39,7 +69,7 @@ function build_query(params) {
         .from(_.get(params,'from',0))
         .size(_.get(params,'size',1))
         .build();
-        console.log("ElasticSearch Query",JSON.stringify(query,null,2));
+        console.log("ElasticSearch Query",JSON.stringify(query));
         return new Promise.resolve(query);
     });
 }
@@ -52,10 +82,14 @@ module.exports=function(params){
 
 /*
 var testparams = {
-    question: "what is an example user question",
+    question: "what is the answer",
     topic: "optional_topic",
     from: 0,
-    size: 0
+    size: 0,
+    use_keyword_filters: "true",
+    enable_client_filters: "true",
+    qnaClientFilter: "filter1"
+    
 };
 build_query(testparams)
 */
