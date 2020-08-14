@@ -18,9 +18,19 @@ args = type('', (), {})()
 if __name__ != "__main__":
     args = parser.parse_args()
 else:
-    args.stack_arn = 'QNA-dev-dev-master-4'
-    args.cmk_arn = "arn:aws:kms:us-east-1:1234567890:key/1234567890"
+    args.stack_arn = 'QNA-dev-dev-master-1'
+    args.cmk_arn = "arn:aws:kms:us-east-1:123456790:key/AAAAAAA"
 
+policy_document = {
+    "Version":"2012-10-17",
+    "Statement":[
+        {
+            "Effect":"Allow",
+            "Action":"kms:Decrypt",
+            "Resource":args.cmk_arn
+        }
+    ]
+}
 
 
 def process_stacks(stackname):
@@ -33,13 +43,39 @@ def process_stacks(stackname):
         }
     )
 
+    role_paginator = iam_client.get_paginator('list_role_policies')
+
     for response in response_iterator:
         lambda_resources = filter(lambda x: x["ResourceType"] == "AWS::Lambda::Function",response["StackResourceSummaries"])
         
 
         for lambda_func in lambda_resources:
-
             lambda_client.update_function_configuration(FunctionName=lambda_func["PhysicalResourceId"],KMSKeyArn=args.cmk_arn)
+            print(f"Updated function {lambda_func} in stack {stackname}")
+            
+            lambda_configuration = lambda_client.get_function_configuration(FunctionName=lambda_func["PhysicalResourceId"])
+            role_name = lambda_configuration["Role"].split("/")[-1]
+
+            role_iterator = role_paginator.paginate(
+                RoleName=role_name,
+                PaginationConfig={
+                    'MaxItems': 1000,
+                    'PageSize': 1000
+                }
+            )
+
+            cmk_policy_exists = False
+            for role in role_iterator:
+                if "CMKPolicy" in role["PolicyNames"]:
+                    cmk_policy_exists = True
+                    break
+
+            if not cmk_policy_exists:
+                iam_client.put_role_policy(RoleName=role_name, PolicyName = "CMKPolicy",PolicyDocument=json.dumps(policy_document))
+
+
+
+
 
 
 process_stacks(args.stack_arn)
@@ -51,11 +87,14 @@ response_iterator = paginator.paginate(
         'MaxItems': 10000,
     }
 )
+
 for response in response_iterator:
     stacks = filter(lambda x: x["ResourceType"] == "AWS::CloudFormation::Stack",response["StackResourceSummaries"])
     for stack in stacks:
         print(f"Processing stack {stack}")
         process_stacks(stack["PhysicalResourceId"])
+
+
 
 
 
