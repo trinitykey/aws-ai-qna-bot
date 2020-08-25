@@ -12,14 +12,16 @@ lambda_client = boto3.client('lambda')
 iam_client = boto3.client('iam')
 kms_client = boto3.client("kms")
 cloudformation_client = boto3.client('cloudformation')
+ssm_client = boto3.client('ssm')
+s3_client = boto3.client('s3')
 
 args = type('', (), {})()
 
 if __name__ != "__main__":
     args = parser.parse_args()
 else:
-    args.stack_arn = 'QNA-dev-dev-master-1'
-    args.cmk_arn = "arn:aws:kms:us-east-1:123456790:key/AAAAAAA"
+    args.stack_arn = 'QNA-dev-dev-master-4'
+    args.cmk_arn = "arn:aws:kms:us-east-1:12345678:key/aaaaaaa-bbbb-ccc-dddd-eeeeeee"
 
 policy_document = {
     "Version":"2012-10-17",
@@ -27,6 +29,7 @@ policy_document = {
         {
             "Effect":"Allow",
             "Action":"kms:Decrypt",
+            
             "Resource":args.cmk_arn
         }
     ]
@@ -34,7 +37,6 @@ policy_document = {
 
 
 def process_stacks(stackname):
-    # Get all of the lambda resources from the QnABot stack
     paginator = cloudformation_client.get_paginator('list_stack_resources')
     response_iterator = paginator.paginate(
         StackName=stackname,
@@ -73,10 +75,43 @@ def process_stacks(stackname):
             if not cmk_policy_exists:
                 iam_client.put_role_policy(RoleName=role_name, PolicyName = "CMKPolicy",PolicyDocument=json.dumps(policy_document))
 
+        ssm_parameters = filter(lambda x: x["ResourceType"] == "AWS::SSM::Parameter",response["StackResourceSummaries"])
+
+        for parameter in ssm_parameters:
+            parameter_name = parameter["PhysicalResourceId"]
+            parameter_response = ssm_client.get_parameter(
+                Name=parameter_name,
+                WithDecryption=True
+            )
+            parameter_value = parameter_response['Parameter']['Value']
+            description = parameter_response['Parameter']["Description"] if "Decription" in parameter_response['Parameter'] else ""
+
+            ssm_response = ssm_client.put_parameter(
+                    Name=parameter_name,
+                    Description=description,
+                    Value=parameter_value,
+                    Type='SecureString',
+                    KeyId=args.cmk_arn,
+                    Overwrite=True,
+                )
 
 
-
-
+        s3_buckets = filter(lambda x: x["ResourceType"] == "AWS::S3::Bucket",response["StackResourceSummaries"])
+        for bucket in s3_buckets:
+            response = s3_client.put_bucket_encryption(
+                        Bucket=bucket["PhysicalResourceId"],
+                        ServerSideEncryptionConfiguration={
+                            'Rules': [
+                                        {
+                                            'ApplyServerSideEncryptionByDefault': {
+                                                'SSEAlgorithm': 'aws:kms',
+                                                'KMSMasterKeyID': args.cmk_arn
+                                            }
+                                        },
+                                    ]
+                                }
+                            )
+            print(f"Encryption set for {bucket['PhysicalResourceId']}")
 
 process_stacks(args.stack_arn)
 
