@@ -28,6 +28,7 @@ async function run_query(req, query_params) {
 async function isESonly(req, query_params) {
     // returns boolean whether question is supported only on ElasticSearch
     // no_hits is ES only
+    console.log("isESOnly Request " + JSON.stringify(req) + " query_params " + JSON.stringify(query_params) )
     var no_hits_question = _.get(req, '_settings.ES_NO_HITS_QUESTION', 'no_hits');
     var ES_only_questions = [no_hits_question];
     if (ES_only_questions.includes(query_params['question'])) {
@@ -40,6 +41,11 @@ async function isESonly(req, query_params) {
     // setting topics is ES only
     if (_.get(query_params, 'topic')!="") {
         return true
+    }
+    //Don't send one word questions to Kendra
+    if(request.question.split(" ").length  < 2){
+        console.log("One hit wonder")
+        return true;
     }
     return false;
 }
