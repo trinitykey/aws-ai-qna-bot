@@ -14,15 +14,63 @@ var kendra = require('./kendraQuery');
 var key = _.get(process.env, "DEFAULT_SETTINGS_PARAM", "fdsjhf98fd98fjh9 du98fjfd 8ud8fjdf");
 var encryptor = require('simple-encryptor')(key);
 
+const isTextRedacted = text => {
+    console.log("Testing redaction " + text + "QNARedact " + process.env.QNAREDACT)
+    if (process.env.QNAREDACT === "true") {
+        let re = new RegExp(process.env.REDACTING_REGEX,"g");
+        let redacted_text = text.replace(re,"XXXXXX");
+        console.log(`redacted_text ${redacted_text} text ${text}`)
+        var result = redacted_text != text;
+        console.log(`Is Redacted ${result}`)
+        return result;
+    } else {
+        return false;
+    }
+}
+function handle_redaction(req,query_params)
+{
+    var foundRedactedResponse = _.get(req,"_settings.FOUND_REDACTED_REGEX_RESPONSE");
+    if(foundRedactedResponse != "" && !isTextRedacted(query_params.question))
+    {
+        return null;
+    }
+
+    return response = {
+        "hits": {
+            "hits": [
+                {
+                    "_id": "REDACTED",
+                    "_source": {
+                        "qid": "REDACT_RESPONSE",
+                        "a": foundRedactedResponse,
+                        "type": "qna",
+                        "quniqueterms": "REDACT_RESPOMSE",
+                        "answersource": "RedactedResponse"
+                    }
+                }
+            ]
+        }
+    }
+
+}
+
 async function run_query(req, query_params) {
     var onlyES = await isESonly(req, query_params);
-    
+    let response = "";
     // runs kendra query if question supported on Kendra and KENDRA_FAQ_INDEX is set
-    if (!onlyES && _.get(req, "_settings.KENDRA_FAQ_INDEX")!=""){
-        return await run_query_kendra(req, query_params);
-    } else {
-        return await run_query_es(req, query_params);
+    var redact_response = handle_redaction(req,query_params);
+    if(redact_response != null)
+    {
+        response = redact_response;
     }
+    else if (!onlyES && _.get(req, "_settings.KENDRA_FAQ_INDEX")!=""){
+        response= await run_query_kendra(req, query_params);
+    } 
+    else {
+        response= await run_query_es(req, query_params);
+    }
+    console.log(`response ${JSON.stringify(response)}` )
+    return response;
 }
 
 async function isESonly(req, query_params) {

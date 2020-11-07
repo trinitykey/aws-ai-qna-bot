@@ -195,6 +195,7 @@ async function routeKendraRequest(request_params) {
     if (request_params.size) {
         num = Math.min(num, request_params.size);
     }
+    console.log(`request_params.kendra_faq_index ${request_params.kendra_faq_index}`)
     for (j=0; j<num; j++) {
         faq_struct = json_struct[j];
         
