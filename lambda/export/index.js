@@ -13,12 +13,10 @@ var join=require('./lib/join')
 var clean=require('./lib/clean')
 
 exports.step=function(event,context,cb){
-    console.log("step")
     console.log("Request",JSON.stringify(event,null,2))
     var Bucket=event.Records[0].s3.bucket.name
     var Key=decodeURI(event.Records[0].s3.object.key)
     var VersionId=_.get(event,"Records[0].s3.object.versionId")
-    console.log(Bucket,Key) 
     
     s3.waitFor('objectExists',{Bucket,Key,VersionId}).promise()
     .then(()=>s3.getObject({Bucket,Key,VersionId}).promise())
@@ -27,7 +25,6 @@ exports.step=function(event,context,cb){
         var step_status_ignore = ['Error', 'Completed', 'Sync Complete', 'Parsing content JSON', 'Creating FAQ']
         if (step_status_ignore.includes(config.status)===false) {
             return Promise.try(function(){
-                console.log("Config:",JSON.stringify(config,null,2))
                 switch(config.status){
                     case 'Started':
                         return start(config);

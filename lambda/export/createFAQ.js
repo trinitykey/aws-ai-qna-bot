@@ -20,8 +20,7 @@ function s3Uploader(s3Client,params) {
                 reject(err);
             }
             else {
-                console.log('Uploaded CSV to S3 successfully:');
-                console.log(data);           // successful response
+                console.log('Uploaded JSON to S3 successfully:');
                 resolve(data);
             }
             });
@@ -44,9 +43,7 @@ function faqConverter(kendraClient,params) {
             }
             else {
                 console.log('Converted JSON to FAQ successfully:');
-                console.log(data);           // successful response
                 poll(() => kendraClient.describeFaq({IndexId: params.IndexId,Id:data.Id }).promise(),(result) => result.Status != "ACTIVE",5000 ).then(() => resolve(data));        // successful response
-                resolve(data);
             }
             });
     });
@@ -68,7 +65,6 @@ function faqDeleter(kendraClient,params) {
             }
             else {
                 console.log('Deleted old FAQ successfully. New list of FAQs in index ' + params.IndexId + ':');
-                console.log("Delete parameters " + JSON.stringify(params));   
                 //describeFaq should cause an exception when the faq has been deleted.
                 poll(() => kendraClient.describeFaq(params).promise(),(result) => true,5000 ).then(() => resolve(data));        // successful response
                 

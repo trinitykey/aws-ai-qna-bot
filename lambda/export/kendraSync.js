@@ -107,7 +107,6 @@ exports.performSync=async function(event,context,cb){
         var Bucket=event.Records[0].s3.bucket.name
         var Key=decodeURI(event.Records[0].s3.object.key)
         var VersionId=_.get(event,"Records[0].s3.object.versionId")
-        console.log(Bucket,Key)
         
         // triggered by export file, waits to be uploaded
         await s3.waitFor('objectExists',{Bucket,Key,VersionId}).promise()
@@ -148,7 +147,7 @@ exports.performSync=async function(event,context,cb){
         await create.handler(createFAQparams);
         // wait for index to complete creation
         // TODO: https://docs.aws.amazon.com/kendra/latest/dg/create-index.html
-        console.log('Completed CSV converting to FAQ');
+        console.log('Completed JSON converting to FAQ');
         
         
         await update_status(process.env.OUTPUT_S3_BUCKET, 'Sync Complete');
