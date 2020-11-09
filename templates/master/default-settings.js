@@ -1,14 +1,14 @@
 var default_settings = {
-    ENABLE_DEBUG_RESPONSES: "false",
-    ES_USE_KEYWORD_FILTERS: "true",
-    ES_KEYWORD_SYNTAX_TYPES: "NOUN,PROPN,VERB,INTJ",
-    ES_SYNTAX_CONFIDENCE_LIMIT: ".20",
-    ES_MINIMUM_SHOULD_MATCH: "2<75%",
-    ES_NO_HITS_QUESTION: "no_hits",
-    ES_USE_FUZZY_MATCH: "false",
-    ES_PHRASE_BOOST: "4",
-    ES_SCORE_ANSWER_FIELD: "false",
-    ENABLE_SENTIMENT_SUPPORT: "true",
+    ENABLE_DEBUG_RESPONSES: "false",  // Determines whethere to log original English responses and translated responses for debugging
+    ES_USE_KEYWORD_FILTERS: "true", // Determines whether to detect keywords from Comprehend when searching for answers
+    ES_KEYWORD_SYNTAX_TYPES: "NOUN,PROPN,VERB,INTJ", //Comprehend will return these parts of speech founf by Amazon Comprehend
+    ES_SYNTAX_CONFIDENCE_LIMIT: ".20", //  Comprehend makes a best effort to determine the parts of speech  in a sentence. The keywords will only be used if the confidence limit is greater than this amount
+    ES_MINIMUM_SHOULD_MATCH: "2<75%", // Refer to https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-minimum-should-match.html for more information
+    ES_NO_HITS_QUESTION: "no_hits", // The QID of the question when no answers could be found for a user's question
+    ES_USE_FUZZY_MATCH: "false", // Refer to https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-fuzzy-query.html
+    ES_PHRASE_BOOST: "4", //TODO: Ask Bob
+    ES_SCORE_ANSWER_FIELD: "false",//TODO: Ask Bob
+    ENABLE_SENTIMENT_SUPPORT: "true", //Determines whether to use Comprehend for sentiment analysis.  Refer to https://docs.aws.amazon.com/comprehend/latest/dg/how-sentiment.html 
     ENABLE_MULTI_LANGUAGE_SUPPORT: "false", //User can override and set to true to Enable Multilanguage support
     MINIMUM_CONFIDENCE_SCORE: 0.6, //User can override this value to set the minimum confidence they accept using CustomQnABotSettings
     ALT_SEARCH_KENDRA_INDEXES: [], // Add Kendra index to array to enable Amazon Kendra as a fallback source of answers
