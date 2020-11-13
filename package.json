@@ -26,9 +26,8 @@
     "up": "npm run upload && npm run stack dev/master up",
     "update": "npm run upload; npm run stack dev/master update",
     "restart": "npm run stack dev/master restart",
-    "down": "npm run stack dev/master down", 
+    "down": "npm run stack dev/master down",
     "createKendraFaqIndex": "./bin/create_kendra_faq_resources.js"
-
   },
   "repository": {
     "type": "git",

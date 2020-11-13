@@ -129,6 +129,8 @@ module.exports= async (event, context, callback) => {
     try {
         var settings = await get_settings();
         var kendra_index = _.get(settings, "KENDRA_FAQ_INDEX")
+        console.log("")
+        console.log("DEBUG Kendra Index Length " + kendra_index.length);
         var question = _.get(event,'question','');
         var topic = _.get(event,'topic','');
         let okKendraQuery = (question.length > 0 && topic.length == 0 && kendra_index != "") ;

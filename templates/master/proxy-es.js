@@ -222,6 +222,17 @@ module.exports={
           	}
           },
           {
+          	"PolicyName": "ComprehendPolicy",
+          	"PolicyDocument": {
+          		"Version": "2012-10-17",
+          		"Statement": [{
+          			"Effect": "Allow",
+          			"Action": ["comprehend:DetectPiiEntities"],
+          			"Resource": "*"
+          		}]
+          	}
+          },
+          {
             "PolicyName": "LambdaInvokePolicy",
             "PolicyDocument": {
                 "Version": "2012-10-17",
