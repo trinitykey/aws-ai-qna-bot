@@ -14,86 +14,13 @@ var kendra = require('./kendraQuery');
 var key = _.get(process.env, "DEFAULT_SETTINGS_PARAM", "fdsjhf98fd98fjh9 du98fjfd 8ud8fjdf");
 var encryptor = require('simple-encryptor')(key);
 
-const comprehend_client = new aws.Comprehend();
 
-const isTextRedacted = async (text,useComprehendForPII) => {
-
-
-
-    console.log("Testing redaction " + text + "QNARedact " + process.env.QNAREDACT)
-    if (process.env.QNAREDACT === "true") {
-        let re = new RegExp(process.env.REDACTING_REGEX,"g");
-        let redacted_text = text.replace(re,"XXXXXX");
-        console.log(`redacted_text ${redacted_text} text ${text}`)
-        var result = redacted_text != text;
-        console.log(`Is Redacted ${result}`)
-        if(result) //if the regex was returned. No need to call Comprehend
-            return result;
-         if(useComprehendForPII)
-         {
-            var params = {
-                LanguageCode: "en",
-                Text: text
-              };
-            var comprehendResult = await comprehend_client.detectPiiEntities(params).promise();
-            console.log(JSON.stringify(comprehendResult) + "entity count == " + comprehendResult.Entities.length )
-            if(comprehendResult.Entities.length == 0)
-            {
-              console.log("No PII found by Comprehend")
-              return false;
-            }
-            return comprehendResult.Entities.filter(entity => entity.score > 0.90 && entity.Type != "Name" ).length > 0;
-            
-         }
-    
-
-    } else {
-        return false;
-    }
-
-}
-
-async function handle_redaction(req,query_params)
-{
-    var useComprehendForPII = _.get(req,"_settings.ENABLE_COMPREHEND_FOR_PII_DETECTION");
-    console.log("useComprehendForPII " + useComprehendForPII + " " + _.get(req,"_settings.ENABLE_COMPREHEND_FOR_PII_DETECTION" ))
-    var foundRedactedResponse = _.get(req,"_settings.FOUND_REDACTED_REGEX_RESPONSE");
-    var isTextRedactedResult = await isTextRedacted(query_params.question,useComprehendForPII);
-    console.log("textredactedresult " + isTextRedactedResult)
-    if(foundRedactedResponse == "" ||  !isTextRedactedResult)
-    {
-        return null;
-    }
-
-    return response = {
-        "hits": {
-            "hits": [
-                {
-                    "_id": "REDACTED",
-                    "_source": {
-                        "qid": "REDACT_RESPONSE",
-                        "a": foundRedactedResponse,
-                        "type": "qna",
-                        "quniqueterms": "REDACT_RESPOMSE",
-                        "answersource": "RedactedResponse"
-                    }
-                }
-            ]
-        }
-    }
-
-}
 
 async function run_query(req, query_params) {
     var onlyES = await isESonly(req, query_params);
     let response = "";
     // runs kendra query if question supported on Kendra and KENDRA_FAQ_INDEX is set
-    var redact_response = await handle_redaction(req,query_params);
-    if(redact_response != null)
-    {
-        response = redact_response;
-    }
-    else if (!onlyES && _.get(req, "_settings.KENDRA_FAQ_INDEX")!=""){
+   if (!onlyES && _.get(req, "_settings.KENDRA_FAQ_INDEX")!=""){
         response= await run_query_kendra(req, query_params);
     } 
     else {
@@ -120,9 +47,7 @@ async function isESonly(req, query_params) {
         return true
     }
     //Don't send one word questions to Kendra
-    console.log(`query_params ${query_params}` )
     if(query_params.question.split(" ").length  < 2){
-        console.log("One hit wonder")
         return true;
     }
     return false;
@@ -131,7 +56,6 @@ async function isESonly(req, query_params) {
 async function run_query_es(req, query_params) {
     
     var es_query = await build_es_query(query_params);
-    console.log("Running ES Query")
     var es_response = await request({
         url: `https://${req._info.es.address}/${req._info.es.index}/_doc/_search?search_type=dfs_query_then_fetch`,
         method: "GET",

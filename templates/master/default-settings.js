@@ -38,8 +38,8 @@ var default_settings = {
     CONNECT_NEXT_PROMPT_VARNAME: "connect_nextPrompt", // Name of session var to use for next prompt
     ENABLE_REDACTING: "false", // Enable the system to redact log output
     REDACTING_REGEX: "\\b\\d{4}\\b(?![-])|\\b\\d{9}\\b|\\b\\d{3}-\\d{2}-\\d{4}\\b", // default regex to use for redacting - redacts 4 digit numbers not followed by a '-', 9 digit numbers (SSN with no '-'s), and Standard SSN format
-    FOUND_REDACTED_REGEX_RESPONSE: "I am sorry I am not able to answer personal questions",
-    ENABLE_COMPREHEND_FOR_PII_DETECTION: "true"
+    PII_QUESTION: "",
+    ENABLE_COMPREHEND_FOR_PII_DETECTION: false
 }
 
 module.exports = {
