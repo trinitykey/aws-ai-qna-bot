@@ -150,21 +150,4 @@ var params = {
    
  }
 
-//  indexCount = indexResult.IndexConfigurationSummaryItems.length;
-
-//  var defaultIndex = indexResult.IndexConfigurationSummaryItems[0].Id;
-//  if(indexCount > 1)
-//  {
-//      chosenIndex = prompt(`Which of the above Kendra indexes would you like to use? ${defaultIndex}`);
-//  }
- 
-//  if(chosenIndex.length == 0)
-//  {
-//      chosenIndex = defaultIndex;
-//  }
-
-
-
-
-
   })();

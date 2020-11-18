@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 (async () => {
 process.env.AWS_SDK_LOAD_CONFIG = true;
 var AWS = require("aws-sdk");
@@ -7,7 +9,7 @@ args = process.argv.slice(2);
 if(args.length != 1)
 {
     console.log("Must specify DynamoDB tablename");
-    // throw "Must specify DynamoDB tablename"
+    throw "Must specify DynamoDB tablename"
 }
 
 const getAllData = async (params) => {
