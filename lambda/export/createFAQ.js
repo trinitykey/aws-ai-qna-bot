@@ -21,10 +21,7 @@ function s3Uploader(s3Client,params) {
             }
             else {
                 console.log('Uploaded JSON to S3 successfully:');
-<<<<<<< HEAD
-=======
                 console.log(data);           // successful response
->>>>>>> develop
                 resolve(data);
             }
             });
@@ -47,9 +44,6 @@ function faqConverter(kendraClient,params) {
             }
             else {
                 console.log('Converted JSON to FAQ successfully:');
-<<<<<<< HEAD
-                poll(() => kendraClient.describeFaq({IndexId: params.IndexId,Id:data.Id }).promise(),(result) => result.Status != "ACTIVE",5000 ).then(() => resolve(data));        // successful response
-=======
                 console.log(data);           // successful response
                 poll(() => kendraClient.describeFaq({IndexId: params.IndexId,Id:data.Id }).promise(),(result) => {
                     console.log("describeFaq " + JSON.stringify(result));
@@ -63,7 +57,6 @@ function faqConverter(kendraClient,params) {
                 .then(() => {
                     return resolve(data)})
                 .catch(() => reject("Could not sync Kendra FAQ"))       // successful response
->>>>>>> develop
             }
             });
     });
