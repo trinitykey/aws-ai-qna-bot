@@ -63,49 +63,47 @@ async function update_userInfo(userId, req_userInfo) {
 
 const comprehend_client = new AWS.Comprehend();
 
-const isTextRedacted = async (text,useComprehendForPII) => {
+const isPIIDetected = async (text,useComprehendForPII,piiRegex) => {
 
 
 
-    console.log("Testing redaction " + text + "QNARedact " + process.env.QNAREDACT)
-    if (process.env.QNAREDACT === "true") {
-        let re = new RegExp(process.env.REDACTING_REGEX,"g");
+    console.log("Testing redaction ")
+    if(piiRegex){
+        let re = new RegExp(piiRegex,"g");
         let redacted_text = text.replace(re,"XXXXXX");
         console.log(`redacted_text ${redacted_text} text ${text}`)
         var result = redacted_text != text;
         console.log(`Is Redacted ${result}`)
         if(result) //if the regex was returned. No need to call Comprehend
             return result;
-         if(useComprehendForPII)
-         {
-            var params = {
+    } else {
+        console.log("Warning: No value found for setting  PII_REJECTION_REGEX not using REGEX Matching")
+    }
+    if(useComprehendForPII){
+        var params = {
                 LanguageCode: "en",
                 Text: text
-              };
+            };
             try
             {
                 var comprehendResult = await comprehend_client.detectPiiEntities(params).promise();
                 console.log(JSON.stringify(comprehendResult) + "entity count == " + comprehendResult.Entities.length )
                 if(!("Entities" in comprehendResult) ||  comprehendResult.Entities.length == 0)
                 {
-                  console.log("No PII found by Comprehend")
-                  return false;
+                    console.log("No PII found by Comprehend")
+                    return false;
                 }
                 return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && entity.Type != "Name" ).length > 0;;
-    
+
             }catch(exception)
             {
                 console.log("Warning: Exception while trying to detect PII with Comprehend. Skipping...");
                 console.log("Exception " + exception);
                 return false;
             }
-            
-         }
     
-
-    } else {
-        return false;
     }
+
 
 }
 
@@ -155,12 +153,16 @@ module.exports=async function preprocess(req,res){
             req.question = _.get(req, '_settings.NO_VERIFIED_IDENTITY_QUESTION','no_verified_identity') ;
         }
     }
-    console.log("Checking for PII")
-    if(_.get(req,"_settings.PII_QUESTION")){
-        if(await isTextRedacted(req.question,_.get(req,"_settings.ENABLE_COMPREHEND_FOR_PII_DETECTION"))){
-            console.log("Found PII or REGEX Match - setting question to PII_QUESTION") ;
-            req.question = _.get(req, '_settings.PII_QUESTION') ;
+    if(_.get(req,'_settings.PII_REJECTION_ENABLED')){
+        console.log("Checking for PII")
+        if(_.get(req,"_settings.PII_REJECTION_QUESTION")){
+            if(await isPIIDetected(req.question,_.get(req,"_settings.PII_REJECTION_WITH_COMPREHEND"), _.get(req,"_settings.PII_REJECTION_REGEX"))){
+                console.log("Found PII or REGEX Match - setting question to PII_REJECTION_QUESTION") ;
+                req.question = _.get(req, '_settings.PII_REJECTION_QUESTION') ;
+            }
         }
+    }else{
+        console.log("Not checking for PII " + _.get(req,'_settings.PII_REJECTION_ENABLED'));
     }
 
     // Add _userInfo to req, from UsersTable

@@ -155,7 +155,9 @@ We are currently working on adding Microsoft Edge support.
 See the [LICENSE.md](LICENSE.md) file for details
 
 ## New features 
-
+### Version 4.4.0
+- New Personally Identifiable Information (PII) Rejection support using the setting PII_REJECTION_ENABLED. Use the PII_REJECTION_QUESTION setting to direct 
+QnABot to respond when it detects PII.  QnABot will use the PII_REJECTION_REGEX to find matching PII patterns and if PII_REJECTION_WITH_COMPREHEND is set to true, it will also use [Amazon Comprehend](https://aws.amazon.com/blogs/machine-learning/detecting-and-redacting-pii-using-amazon-comprehend/) to find PII. 
 ### Version 4.3.0
 - New Connect Wizard available in the Content Designer UI to assist integration with a Connect Contact Flow.
 - New 4-node Elasticsearch domain support for improved fault tolerance in deployment template.

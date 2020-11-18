@@ -38,8 +38,10 @@ var default_settings = {
     CONNECT_NEXT_PROMPT_VARNAME: "connect_nextPrompt", // Name of session var to use for next prompt
     ENABLE_REDACTING: "false", // Enable the system to redact log output
     REDACTING_REGEX: "\\b\\d{4}\\b(?![-])|\\b\\d{9}\\b|\\b\\d{3}-\\d{2}-\\d{4}\\b", // default regex to use for redacting - redacts 4 digit numbers not followed by a '-', 9 digit numbers (SSN with no '-'s), and Standard SSN format
-    PII_QUESTION: "",
-    ENABLE_COMPREHEND_FOR_PII_DETECTION: false
+    PII_REJECTION_ENABLED: false, // Enables PII Rejection
+    PII_REJECTION_QUESTION: "pii_rejection_question", // If PII is found, the user's request (question) will change to this phrase
+    PII_REJECTION_WITH_COMPREHEND: true, //When set to true, Comprehend will be used for PII detection in addition to matching  based on the PII_REJECTION_REGE
+    PII_REJECTION_REGEX: "\\b\\d{4}\\b(?![-])|\\b\\d{9}\\b|\\b\\d{3}-\\d{2}-\\d{4}\\b" //Regex to use to find PII.
 }
 
 module.exports = {
