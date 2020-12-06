@@ -32,7 +32,7 @@ async function qnaJsontoKendraJsonParser(params){
               // - embedding the entire JSON document can cause issues with Kendra attribute length limits
               // - custom attributes need to be added at the index level, which represents extra work/complexity for user
               // QnABot query lambda will use the qid stored in the _source_uri attribute to retrieve full JSON doc from ES
-              _sourcFe_uri : JSON.stringify({_source_qid: elem.qid})
+              _source_uri : JSON.stringify({_source_qid: elem.qid})
             }
           };
           data.FaqDocuments.push(entry);
