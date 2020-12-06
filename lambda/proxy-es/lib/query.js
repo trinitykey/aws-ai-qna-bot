@@ -22,7 +22,8 @@ async function run_query(req, query_params) {
     // runs kendra query if question supported on Kendra and KENDRA_FAQ_INDEX is set
    if (!onlyES && _.get(req, "_settings.KENDRA_FAQ_INDEX")!=""){
         response= await run_query_kendra(req, query_params);
-    } else {
+    } 
+    else {
         response= await run_query_es(req, query_params);
     }
     console.log(`response ${JSON.stringify(response)}` )
