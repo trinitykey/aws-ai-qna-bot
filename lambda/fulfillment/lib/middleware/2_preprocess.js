@@ -63,8 +63,7 @@ async function update_userInfo(userId, req_userInfo) {
 
 const comprehend_client = new AWS.Comprehend();
 
-const isPIIDetected = async (text,useComprehendForPII,piiRegex) => {
-
+const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ignore_list) => {
 
 
     console.log("Testing redaction ")
@@ -93,7 +92,10 @@ const isPIIDetected = async (text,useComprehendForPII,piiRegex) => {
                     console.log("No PII found by Comprehend")
                     return false;
                 }
-                return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && entity.Type != "Name" ).length > 0;;
+                console.log("Ignoring types for PII == " + pii_rejection_ignore_list)
+                pii_rejection_ignore_list = pii_rejection_ignore_list.toLowerCase().split(",")
+
+                return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && pii_rejection_ignore_list.indexOf(entity.Type.toLowerCase()) != -1).length > 0;;
 
             }catch(exception)
             {
@@ -121,6 +123,7 @@ module.exports=async function preprocess(req,res){
             idattrs = _.get(decoded,'payload');
             console.log("Decoded idtoken:",idattrs);
             var kid = _.get(decoded,'header.kid');
+            console.log()
             var default_jwks_url = [_.get(req,'_settings.DEFAULT_USER_POOL_JWKS_URL')];
             var identity_provider_jwks_url = _.get(req,'_settings.IDENTITY_PROVIDER_JWKS_URLS');
             if (identity_provider_jwks_url && identity_provider_jwks_url.length) {
@@ -155,8 +158,12 @@ module.exports=async function preprocess(req,res){
     }
     if(_.get(req,'_settings.PII_REJECTION_ENABLED')){
         console.log("Checking for PII")
+        console.log("Request--" + JSON.stringify(req))
         if(_.get(req,"_settings.PII_REJECTION_QUESTION")){
-            if(await isPIIDetected(req.question,_.get(req,"_settings.PII_REJECTION_WITH_COMPREHEND"), _.get(req,"_settings.PII_REJECTION_REGEX"))){
+            if(await isPIIDetected(req.question,
+                _.get(req,"_settings.PII_REJECTION_WITH_COMPREHEND"), 
+                _.get(req,"_settings.PII_REJECTION_REGEX"),
+                _.get(req,"_settings.PII_REJECTION_IGNORE_TYPES"))){
                 console.log("Found PII or REGEX Match - setting question to PII_REJECTION_QUESTION") ;
                 req.question = _.get(req, '_settings.PII_REJECTION_QUESTION') ;
             }
