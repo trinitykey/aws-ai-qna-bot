@@ -171,6 +171,8 @@ async function get_hit(req, res) {
         syntax_confidence_limit: _.get(req, '_settings.ES_SYNTAX_CONFIDENCE_LIMIT'),
         score_answer_field: _.get(req, '_settings.ES_SCORE_ANSWER_FIELD'),
         fuzziness: _.get(req, '_settings.ES_USE_FUZZY_MATCH'),
+        es_expand_contractions: _.get(req,'_settings.ES_EXPAND_CONTRACTIONS')
+
     };
     var no_hits_question = _.get(req, '_settings.ES_NO_HITS_QUESTION', 'no_hits');
     var response = await run_query(req, query_params);

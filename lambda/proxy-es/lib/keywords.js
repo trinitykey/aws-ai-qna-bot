@@ -44,6 +44,31 @@ function get_keywords_from_comprehend(params) {
 }
 
 function get_keywords(params) {
+    try{
+        var contraction_list = JSON.parse(params.es_expand_contractions)
+
+    }catch{
+        contraction_list = {}
+    }
+    var new_question = "";
+    var new_word= ""
+    for(var word of params.question.split(" "))
+    {
+        for(var contraction in contraction_list )
+        {
+            if(word.toLowerCase() == contraction.toLowerCase() || word.toLowerCase() == contraction.toLowerCase().replace("'","’")){
+                new_word = contraction_list[contraction];
+                break;
+            }else{
+                new_word = word
+            }
+        }
+        new_question += " " + new_word 
+    }
+    console.log("Question after expansion " + new_question)
+    params.question = new_question
+
+
     if (_.get(params,'use_keyword_filters')) {
         console.log("use_keyword_filters is true; detecting keywords from question using Comprehend");
         return get_keywords_from_comprehend(params);
@@ -60,7 +85,9 @@ module.exports=function(params){
 
 /*
 var testparams = {
-    question: "what is an example user question",
+    question: "You're really dumb. I’m really smart. I can't believe it",
+    use_keyword_filters: true,
+    es_expand_contractions: `{"you're":"you are","I'm":"I am","can't":"cannot"}`
 };
 get_keywords(testparams);
 */
