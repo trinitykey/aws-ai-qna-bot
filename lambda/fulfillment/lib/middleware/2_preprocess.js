@@ -95,7 +95,7 @@ const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ign
                 console.log("Ignoring types for PII == " + pii_rejection_ignore_list)
                 pii_rejection_ignore_list = pii_rejection_ignore_list.toLowerCase().split(",")
 
-                return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && pii_rejection_ignore_list.indexOf(entity.Type.toLowerCase()) != -1).length > 0;;
+                return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && pii_rejection_ignore_list.indexOf(entity.Type.toLowerCase()) == -1).length > 0;;
 
             }catch(exception)
             {
