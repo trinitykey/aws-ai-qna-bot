@@ -30,6 +30,9 @@
         "connect":{
             "href":"$root/connect"
         },
+        "translate":{
+            "href":"$root/translate"
+        },
         "examples":{
             "href":"$root/examples/documents"
         },

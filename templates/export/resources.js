@@ -77,7 +77,7 @@ module.exports=Object.assign(
         },
         "Handler": "index.handler",
         "MemorySize": "1024",
-        "Role": {"Fn::GetAtt": ["ConnectRole","Arn"]},
+        "Role": {"Fn::GetAtt": ["TranslateRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
         "Tags":[{
@@ -103,10 +103,31 @@ module.exports=Object.assign(
           "Principal": "apigateway.amazonaws.com"
         }
       },
+      "TranslateApiResource": {
+        "Type": "AWS::ApiGateway::Resource",
+        "Properties": {
+          "ParentId": {"Ref": "ApiRootResourceId"},
+          "PathPart": "translate",
+          "RestApiId": {"Ref": "Api"}
+        }
+      },
+      "InvokePermissionTranslateLambda": {
+        "Type": "AWS::Lambda::Permission",
+        "Properties": {
+          "Action": "lambda:InvokeFunction",
+          "FunctionName": {"Fn::GetAtt": ["TranslateLambda", "Arn"]},
+          "Principal": "apigateway.amazonaws.com"
+        }
+      },
       "Deployment":{
         "Type": "Custom::ApiDeployment",
         "DeletionPolicy":"Retain",
-        "DependsOn":["ConnectGet","ConnectApiResource","InvokePermissionConnectLambda"],
+        "DependsOn":["ConnectGet",
+          "ConnectApiResource",
+          "InvokePermissionConnectLambda",
+          "TranslatePost",
+          "TranslateApiResource",
+          "InvokePermissionTranslateLambda"],
         "Properties": {
           "ServiceToken": { "Ref" : "CFNLambda" },
           "restApiId": {"Ref": "Api"},
@@ -134,6 +155,42 @@ module.exports=Object.assign(
                   {"Ref": "AWS::Region"},
                   ":lambda:path/2015-03-31/functions/",
                   {"Fn::GetAtt": ["ConnectLambda", "Arn"]},
+                  "/invocations"
+                ]
+              ]
+            },
+            "IntegrationResponses": [
+               {
+                  "StatusCode": 200
+               }
+            ]
+         },
+         "MethodResponses": [
+            {
+               "StatusCode": 200
+            }
+         ],
+        }
+      },
+      "TranslatePost": {
+        "Type": "AWS::ApiGateway::Method",
+        "Properties": {
+          "AuthorizationType": "AWS_IAM",
+          "HttpMethod": "POST",
+          "RestApiId": {"Ref": "Api"},
+          "ResourceId": {"Ref": "TranslateApiResource"},
+          "Integration": {
+            "Type": "AWS",
+            "IntegrationHttpMethod": "POST",
+            "RequestTemplates":{"application/x-www-form-urlencoded":"{\"body\":$input.json('$')}"},
+            "Uri": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:aws:apigateway:",
+                  {"Ref": "AWS::Region"},
+                  ":lambda:path/2015-03-31/functions/",
+                  {"Fn::GetAtt": ["TranslateLambda", "Arn"]},
                   "/invocations"
                 ]
               ]
@@ -284,7 +341,8 @@ module.exports=Object.assign(
                 "Service": "lambda.amazonaws.com"
               },
               "Action": "sts:AssumeRole"
-            }
+            },
+
           ]
         },
         "Path": "/",
@@ -302,15 +360,9 @@ module.exports=Object.assign(
           "Statement": [{
               "Effect": "Allow",
               "Action": [
-                "s3:*"
+                "translate:ImportTerminology"
               ],
-              "Resource":[{"Fn::Sub":"arn:aws:s3:::${ExportBucket}*"}]
-          },{
-              "Effect": "Allow",
-              "Action": [
-                "lambda:InvokeFunction"
-              ],
-              "Resource":[{"Ref":"TranslateLambda"}]
+              "Resource":["*"]
           }]
         }
       }
