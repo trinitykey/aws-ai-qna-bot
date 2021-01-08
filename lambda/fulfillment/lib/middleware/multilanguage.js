@@ -140,7 +140,7 @@ exports.set_multilang_env = async function (req) {
     return req;
 }
 
-exports.translateText = async function (inputText, sourceLang, targetLang) {
+exports.translateText = async function (inputText, sourceLang, targetLang,req) {
     const res = await get_translation(inputText, sourceLang, targetLang,req);
     return res.TranslatedText;
 }

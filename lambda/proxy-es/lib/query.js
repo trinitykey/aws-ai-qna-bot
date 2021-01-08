@@ -362,7 +362,7 @@ module.exports = async function (req, res) {
             usrLang = _.get(req, 'session.userLocale');
             if (usrLang != 'en') {
                 console.log("Autotranslate hit to usrLang: ", usrLang);
-                hit = await translate.translate_hit(hit, usrLang);
+                hit = await translate.translate_hit(hit, usrLang,req);
             } else {
                 console.log("User Lang is en, Autotranslate not required.");
             }

@@ -1,12 +1,8 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 
-async function get_translation(englishText, targetLang){
-    const params = {
-        SourceLanguageCode: 'en', /* required */
-        TargetLanguageCode: targetLang, /* required */
-        Text: englishText, /* required */
-    };
+async function get_translation(englishText, targetLang,req){
+
     console.log("get_translation:", targetLang, "InputText: ", englishText);
     if (targetLang === 'en') {
         console.log("get_translation: target is en, translation not required. Return english text");
@@ -15,6 +11,21 @@ async function get_translation(englishText, targetLang){
 
     const translateClient = new AWS.Translate();
     try {
+        var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == "true";
+        var customTerminologies = _.get(req._settings,"CUSTOM_TERMINOLOGY_SOURCES","").split(",");
+        const params = {
+            SourceLanguageCode: 'en', /* required */
+            TargetLanguageCode: targetLang, /* required */
+            Text: englishText, /* required */
+        };
+        if(customTerminologyEnabled){
+            if(customTerminologies.length == 0){
+                console.log("Warning: ENABLE_CUSTOM_TERMINOLOGY is set to true, but no entries found for CUSTOM_TERMINOLOGY_SOURCES ")
+            }else{
+                params["TerminologyNames"] = customTerminologies;
+            }
+        }
+    
         console.log("input text:", englishText);
         const translation = await translateClient.translateText(params).promise();
         console.log("translation:", translation);
@@ -33,7 +44,7 @@ function replaceAll(str, find, replace) {
     return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
 }
 
-exports.translate_hit = async function(hit,usrLang){
+exports.translate_hit = async function(hit,usrLang,req){
     console.log("translate_hit:", JSON.stringify(hit,null,2));
     let hit_out = _.cloneDeep(hit);
     let a = _.get(hit, "a");
@@ -43,7 +54,7 @@ exports.translate_hit = async function(hit,usrLang){
     // catch and log errors before throwing exception.
     if (a && _.get(hit,'autotranslate.a')) {
         try {
-            hit_out.a = await get_translation(hit_out.a, usrLang);
+            hit_out.a = await get_translation(hit_out.a, usrLang,req);
         } catch (e) {
             console.log("ERROR: Answer caused Translate exception: ", a)
             throw (e);
@@ -51,7 +62,7 @@ exports.translate_hit = async function(hit,usrLang){
     }
     if (markdown && _.get(hit,'autotranslate.alt.markdown')) {
         try {
-            const res = await get_translation(hit_out.alt.markdown, usrLang);
+            const res = await get_translation(hit_out.alt.markdown, usrLang,req);
             hit_out.alt.markdown  = replaceAll(res,'] (http', '](http');
         } catch (e) {
             console.log("ERROR: Markdown caused Translate exception: ", a)
@@ -60,7 +71,7 @@ exports.translate_hit = async function(hit,usrLang){
     }
     if (ssml && _.get(hit,'autotranslate.alt.ssml')) {
         try {
-            hit_out.alt.ssml = await get_translation(hit_out.alt.ssml, usrLang);
+            hit_out.alt.ssml = await get_translation(hit_out.alt.ssml, usrLang,req);
         } catch (e) {
             console.log("ERROR: SSML caused Translate exception: ", a);
             throw (e);
