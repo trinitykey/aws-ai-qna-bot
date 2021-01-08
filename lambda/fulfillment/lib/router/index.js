@@ -28,7 +28,7 @@ module.exports=class router {
         console.log(JSON.stringify({req,res},null,2))
 
         if(this.middleware[index]){
-            console.log(`middleware=${this.middleware[index].name}`)
+            console.log(`middleware=${this.middleware[index].name} request ${JSON.stringify(req)} response ${JSON.stringify(res)}`)
             var result=await this.middleware[index](req,res)
             return await this._walk(result.req,result.res,++index)
         }else{
