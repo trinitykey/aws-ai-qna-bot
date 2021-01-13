@@ -12,8 +12,9 @@ async function get_userLanguages(inputText) {
 }
 
 async function get_translation(inputText, sourceLang, targetLang,req ) {
-    var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == "true";
+    var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == true;
     var customTerminologies = _.get(req._settings,"CUSTOM_TERMINOLOGY_SOURCES","").split(",");
+    console.log("get translation request custom terminology *" + (JSON.stringify(customTerminologies))+  "*" + JSON.stringify(req))
 
     const params = {
         SourceLanguageCode: sourceLang, /* required */
@@ -28,9 +29,11 @@ async function get_translation(inputText, sourceLang, targetLang,req ) {
         return res;
     }
     if(customTerminologyEnabled){
+        console.log("Custom terminology enabled")
         if(customTerminologies.length == 0){
             console.log("Warning: ENABLE_CUSTOM_TERMINOLOGY is set to true, but no entries found for CUSTOM_TERMINOLOGY_SOURCES ")
         }else{
+            console.log("Using custom terminologies")
             params["TerminologyNames"] = customTerminologies;
         }
     }
@@ -39,6 +42,7 @@ async function get_translation(inputText, sourceLang, targetLang,req ) {
     try {
         console.log("Fullfilment params " + JSON.stringify(params))
         const translation = await translateClient.translateText(params).promise();
+        console.log("Translation response " + JSON.stringify(translation))
         return translation.TranslatedText;
     } catch (err) {
         console.log("warning - error during translation. Returning: " + inputText);
@@ -105,14 +109,14 @@ async function set_translated_transcript(locale, req) {
         } else if (locale === 'en' && detectedLocale === 'en' && detectedSecondaryLocale) {
             console.log("translate to english using secondary detected locale:  ", req.question);
             const translation = await get_translation(req.question, detectedSecondaryLocale, 'en',req);
-            _.set(req, "_translation", translation.TranslatedText);
-            _.set(req, "question", translation.TranslatedText);
+            _.set(req, "_translation", translation);
+            _.set(req, "question", translation);
             console.log("Overriding input question with translation: ", req.question);
         }  else if (locale !== '' && locale.charAt(0) !== '%' && detectedLocale && detectedLocale !== '') {
             console.log("Confidence in the detected language high enough.");
             const translation = await get_translation(req.question, detectedLocale, 'en',req);
-            _.set(req, "_translation", translation.TranslatedText);
-            _.set(req, "question", translation.TranslatedText);
+            _.set(req, "_translation", translation);
+            _.set(req, "question", translation);
             console.log("Overriding input question with translation: ", req.question);
         }  else {
             console.log ('not possible to perform language translation')

@@ -30,9 +30,9 @@ function isConnectClient(req) {
     return true;
 }
 async function get_translation(inputText, sourceLang, targetLang,req ) {
-    var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == "true";
+    var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == true;
     var customTerminologies = _.get(req._settings,"CUSTOM_TERMINOLOGY_SOURCES","").split(",");
-
+    console.log("get translation request " + JSON.stringify(req))
     const params = {
         SourceLanguageCode: sourceLang, /* required */
         TargetLanguageCode: targetLang, /* required */

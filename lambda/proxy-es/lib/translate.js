@@ -11,8 +11,10 @@ async function get_translation(englishText, targetLang,req){
 
     const translateClient = new AWS.Translate();
     try {
-        var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == "true";
+        var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == true;
         var customTerminologies = _.get(req._settings,"CUSTOM_TERMINOLOGY_SOURCES","").split(",");
+        console.log("get translation request " + JSON.stringify(req))
+
         const params = {
             SourceLanguageCode: 'en', /* required */
             TargetLanguageCode: targetLang, /* required */
