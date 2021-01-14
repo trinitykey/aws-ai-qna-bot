@@ -29,6 +29,28 @@ function isConnectClient(req) {
     }
     return true;
 }
+
+async function get_terminologies(sourceLang,allowedList =[]){
+    const translate = new AWS.Translate();
+        allowedList = allowedList.filter(a => a.length > 0)
+        console.log("Getting registered custom terminologies")
+
+        var configuredTerminologies = await  translate.listTerminologies({}).promise()
+
+
+
+        console.log("terminology response " + JSON.stringify(configuredTerminologies))
+        var sources = configuredTerminologies["TerminologyPropertiesList"].filter(t => t["SourceLanguageCode"] == sourceLang).map(s => s.Name);
+        console.log("Filtered Sources " + JSON.stringify(sources))
+        if(allowedList.length != 0){
+            sources = _.intersection(sources,allowedList)
+        }
+
+        return sources
+
+
+}
+
 async function get_translation(inputText, sourceLang, targetLang,req ) {
     var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == true;
     var customTerminologies = _.get(req._settings,"CUSTOM_TERMINOLOGY_SOURCES","").split(",");
@@ -46,6 +68,8 @@ async function get_translation(inputText, sourceLang, targetLang,req ) {
         return res;
     }
     if(customTerminologyEnabled){
+        customTerminologies = await get_terminologies(sourceLang,customTerminologies)
+
         if(customTerminologies.length == 0){
             console.log("Warning: ENABLE_CUSTOM_TERMINOLOGY is set to true, but no entries found for CUSTOM_TERMINOLOGY_SOURCES ")
         }else{

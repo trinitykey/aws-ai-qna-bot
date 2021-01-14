@@ -360,7 +360,8 @@ module.exports=Object.assign(
           "Statement": [{
               "Effect": "Allow",
               "Action": [
-                "translate:ImportTerminology"
+                "translate:ImportTerminology",
+                "translate:ListTerminologies"
               ],
               "Resource":["*"]
           }]
