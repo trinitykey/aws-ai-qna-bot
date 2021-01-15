@@ -121,6 +121,13 @@ function signS3URL(url, expireSecs) {
 // get document name from URL
 // last element of path with any params removed
 function docName(uri) {
+    if(uri.Title)
+    {
+        return uri.Title;
+    }
+    if(uri.Uri){
+    uri = uri.Uri
+    }
     let x = uri.split("/");
     let y = x[x.length -1] ;
     let n = y.split("?")[0] ;
@@ -233,8 +240,8 @@ async function routeKendraRequest(event, context) {
     /* default message text - can be overridden using QnABot SSM Parameter Store Custom Property */
     let topAnswerMessage = "Amazon Kendra suggested answer. \n\n ";
     let topAnswerMessageMd = "*Amazon Kendra suggested answer.* \n ";
-    let answerMessage = 'While I did not find an exact answer, these search results from Amazon Kendra might be helpful. ' ;
-    let answerMessageMd = '*While I did not find an exact answer, these search results from Amazon Kendra might be helpful.* \n ';
+    let answerMessage = event.req["_settings"]["ALT_SEARCH_KENDRA_ANSWER_MESSAGE"] ;
+    let answerMessageMd = `*${answerMessage}* \n `;
     let faqanswerMessage = 'Answer from Amazon Kendra FAQ.';
     let faqanswerMessageMd = '*Answer from Amazon Kendra FAQ.* \n ';
     let speechMessage = "";
@@ -299,7 +306,11 @@ async function routeKendraRequest(event, context) {
                     
                     // Convert S3 Object URLs to signed URLs
                     let uri = element.DocumentURI ;
-                    answerDocumentUris.add(uri);
+                    let title;
+                    if( element.DocumentTitle && element.DocumentTitle.Text){
+                        title = element.DocumentTitle.Text
+                    }
+                    answerDocumentUris.add({uri:uri,Title:title});
                     kendraQueryId = res.QueryId; // store off the QueryId to use as a session attribute for feedback
                     kendraIndexId = res.originalKendraIndexId; // store off the Kendra IndexId to use as a session attribute for feedback
                     kendraResultId = element.Id; // store off resultId to use as a session attribute for feedback
@@ -359,6 +370,10 @@ async function routeKendraRequest(event, context) {
                     }
                     // but even if topAnswer is found, show URL in markdown
                     docInfo.uri = element.DocumentURI;
+                    let title;
+                    if( element.DocumentTitle && element.DocumentTitle.Text){
+                        docInfo.Title = element.DocumentTitle.Text
+                    }
                     helpfulDocumentsUris.add(docInfo);
                     // foundAnswerCount++;
                     foundDocumentCount++;
@@ -396,9 +411,9 @@ async function routeKendraRequest(event, context) {
             let label = docName(element) ;
             // Convert S3 Object URLs to signed URLs
             if (signS3Urls) {
-                element = signS3URL(element, expireSeconds)
+                element = signS3URL(element.Uri, expireSeconds)
             }
-            event.res.session.appContext.altMessages.markdown += `[${label}](${element})`;
+            event.res.session.appContext.altMessages.markdown += `[${label}](${element.Uri})`;
         });
     }
     
@@ -414,7 +429,7 @@ async function routeKendraRequest(event, context) {
                     event.res.session.appContext.altMessages.markdown += `\n\n  ${element.text}`;
                     event.res.message += `\n\n  ${element.text}`;
                 }
-                let label = docName(element.uri) ;
+                let label = docName(element) ;
                 // Convert S3 Object URLs to signed URLs
                 if (signS3Urls) {
                     element.uri = signS3URL(element.uri, expireSeconds)
@@ -441,3 +456,4 @@ exports.handler = async (event, context) => {
     console.log('context: ' + JSON.stringify(context, null, 2));
     return routeKendraRequest(event, context);
 };
+
