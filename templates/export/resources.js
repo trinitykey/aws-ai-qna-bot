@@ -85,7 +85,43 @@ module.exports=Object.assign(
             Value:"Export"
         }]
       }
-    },
+    },      
+    "KendraCodeVersion":{
+      "Type": "Custom::S3Version",
+      "Properties": {
+          "ServiceToken": { "Ref" : "CFNLambda" },
+          "Bucket": {"Ref":"BootstrapBucket"},
+          "Key": {"Fn::Sub":"${BootstrapPrefix}/lambda/kendra-crawler.zip"},
+          "BuildDate":(new Date()).toISOString()
+      }
+  },
+  "KendraCrawlerLambda": {
+    "Type": "AWS::Lambda::Function",
+    "Properties": {
+      "Code": {
+          "S3Bucket": {"Ref":"BootstrapBucket"},
+          "S3Key": {"Fn::Sub":"${BootstrapPrefix}/lambda/kendra-crawler.zip"},
+          "S3ObjectVersion":{"Ref":"KendraCodeVersion"}
+      },
+      "Environment": {
+        "Variables": {
+          DEFAULT_SETTINGS_PARAM:{"Ref":"DefaultQnABotSettings"},
+          CUSTOM_SETTINGS_PARAM:{"Ref":"CustomQnABotSettings"},
+          DATASOURCE_NAME:{"Fn::Join":["",["QnaBotKendraCrawler-",{"Ref":"AWS::StackId"}]]}
+        }
+      },
+      "Handler": "index.handler",
+      "MemorySize": "1024",
+      "Role": {"Fn::GetAtt": ["KendraCrawlerRole","Arn"]},
+      "Runtime": "nodejs10.x",
+      "Timeout": 300,
+      "Tags":[{
+          Key:"Type",
+          Value:"Export"
+      }]
+    }
+  },
+
 
       "ConnectApiResource": {
         "Type": "AWS::ApiGateway::Resource",
@@ -118,6 +154,22 @@ module.exports=Object.assign(
           "FunctionName": {"Fn::GetAtt": ["TranslateLambda", "Arn"]},
           "Principal": "apigateway.amazonaws.com"
         }
+      },      
+      "KendraCrawlerApiResource": {
+        "Type": "AWS::ApiGateway::Resource",
+        "Properties": {
+          "ParentId": {"Ref": "ApiRootResourceId"},
+          "PathPart": "crawler",
+          "RestApiId": {"Ref": "Api"}
+        }
+      },
+      "InvokePermissionKendraCrawlerLambda": {
+        "Type": "AWS::Lambda::Permission",
+        "Properties": {
+          "Action": "lambda:InvokeFunction",
+          "FunctionName": {"Fn::GetAtt": ["KendraCrawlerLambda", "Arn"]},
+          "Principal": "apigateway.amazonaws.com"
+        }
       },
       "Deployment":{
         "Type": "Custom::ApiDeployment",
@@ -127,6 +179,8 @@ module.exports=Object.assign(
           "InvokePermissionConnectLambda",
           "TranslatePost",
           "TranslateApiResource",
+          "KendraCrawlerGet",
+          "KendrawCrawlerApiResource",
           "InvokePermissionTranslateLambda"],
         "Properties": {
           "ServiceToken": { "Ref" : "CFNLambda" },
@@ -191,6 +245,41 @@ module.exports=Object.assign(
                   {"Ref": "AWS::Region"},
                   ":lambda:path/2015-03-31/functions/",
                   {"Fn::GetAtt": ["TranslateLambda", "Arn"]},
+                  "/invocations"
+                ]
+              ]
+            },
+            "IntegrationResponses": [
+               {
+                  "StatusCode": 200
+               }
+            ]
+         },
+         "MethodResponses": [
+            {
+               "StatusCode": 200
+            }
+         ],
+        }
+      },      
+      "KendraCrawlerGet": {
+        "Type": "AWS::ApiGateway::Method",
+        "Properties": {
+          "AuthorizationType": "AWS_IAM",
+          "HttpMethod": "POST",
+          "RestApiId": {"Ref": "Api"},
+          "ResourceId": {"Ref": "KendraCrawlerApiResource"},
+          "Integration": {
+            "Type": "AWS",
+            "IntegrationHttpMethod": "GET",
+            "Uri": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:aws:apigateway:",
+                  {"Ref": "AWS::Region"},
+                  ":lambda:path/2015-03-31/functions/",
+                  {"Fn::GetAtt": ["KendraCrawlerLambda", "Arn"]},
                   "/invocations"
                 ]
               ]
@@ -362,6 +451,51 @@ module.exports=Object.assign(
               "Action": [
                 "translate:ImportTerminology",
                 "translate:ListTerminologies"
+              ],
+              "Resource":["*"]
+          }]
+        }
+      }
+    },
+    "KendraCrawlerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            },
+
+          ]
+        },
+        "Path": "/",
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          {"Ref":"KendraCrawlerPolicy"}
+        ]
+      }
+    },
+    "KendraCrawlerPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+              "Effect": "Allow",
+              "Action": [
+                "kendra:ListDataSources",
+                "kendra:ListDataSourceSyncJobs",
+                "kendra:DescribeDataSource",
+                "kendra:BatchPutDocument",
+                "kendra:CreateDataSource",
+                "kendra:StartDataSourceSyncJob",
+                "kendra:UpdateDataSource",
+                "ssm:GetParameter"
               ],
               "Resource":["*"]
           }]

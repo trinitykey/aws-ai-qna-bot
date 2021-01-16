@@ -248,9 +248,22 @@ async function getSyncJobStatus(kendraIndexId,dataSourceId,executionId){
 
 }
 exports.handler = async (event, context) => {
+    try{
+        var settings = await get_settings();
 
+        var kendraIndexId = settings.KENDRA_CRAWLER_INDEX;
+        if(!kendraIndexId)
+        {
+            throw "KENDRA_CRAWLER_INDEX was not specified in settings"
+        }
+        var urls = settings.KENDRA_CRAWLER_URLS.split(",");
+        await indexPages(kendraIndexId,process.env.DATASOURCE_NAME,urls,true);
+        return;
 
-  return result;
+   } catch(err){
+     console.log(err)
+     throw err
+   }
 };
 
 async function indexPages(kendraIndexId,dataSourceName,urls,forceSync=false)
@@ -273,24 +286,11 @@ async function indexPages(kendraIndexId,dataSourceName,urls,forceSync=false)
        }
 }
 
-;(async function main () {
-    try {
-     process.env.DEFAULT_SETTINGS_PARAM = "CFN-DefaultQnABotSettings-JQRrDQLejA6E",
-     process.env.CUSTOM_SETTINGS_PARAM = "CFN-CustomQnABotSettings-oZwgxFj59Cvt"
-     var settings = await get_settings();
+// ;(async function main () {
 
-     var dataSourceName = "qnaBotKendraCrawler";
-     var kendraIndexId = settings.KENDRA_CRAWLER_INDEX;
-     if(!kendraIndexId)
-     {
-          throw "KENDRA_CRAWLER_INDEX was not specified in settings"
-     }
-     var urls = settings.KENDRA_CRAWLER_URLS.split(",");
-     await indexPages(kendraIndexId,dataSourceName,urls,true);
-     return;
+//      process.env.DEFAULT_SETTINGS_PARAM = "CFN-DefaultQnABotSettings-JQRrDQLejA6E";
+//      process.env.CUSTOM_SETTINGS_PARAM = "CFN-CustomQnABotSettings-oZwgxFj59Cvt";
+//      process.env.DATASOURCE_NAME = "qnaBotKendraCrawler"
 
-    } catch(err){
-      console.log(err)
-      throw err
-    }
-  })()
+
+//   })()
