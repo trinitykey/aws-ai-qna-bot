@@ -104,7 +104,8 @@ async function getPage(url)
           Browser:browser
       };
     } catch (error) {
-      return callback(error);
+        console.log(error);
+        throw error;
     } 
     
 }
@@ -152,7 +153,7 @@ async function startKendraSync(kendraIndexId,name,forceSync=false)
     var params = {
         IndexId: kendraIndexId, /* required */
       };
-
+    console.log(`Starting Kendra sync for IndexId ${kendraIndexId} DataSource Name ${name}`)
     foundDataSourceIds = (await kendra.listDataSources({IndexId: kendraIndexId}).promise()).SummaryItems.filter(s => s.Name == name).map(m => m.Id)
 
 
@@ -163,7 +164,7 @@ async function startKendraSync(kendraIndexId,name,forceSync=false)
             Name: name,
             Type: "CUSTOM",
         }
-
+        console.log(`${name} doesn't exist.  Creating it....`)
         var createResponse = await kendra.createDataSource(params).promise();
         dataSourceId = createResponse.Id
     }else{
@@ -179,7 +180,7 @@ async function startKendraSync(kendraIndexId,name,forceSync=false)
         Id: dataSourceId, /* required */
         IndexId: kendraIndexId /* required */ 
       };
-
+    console.log("Starting DataSourceSyncJob")
     var syncResponse = await kendra.startDataSourceSyncJob(params).promise();
     return  {
         ExecutionId:syncResponse.ExecutionId,
@@ -272,6 +273,7 @@ async function indexPages(kendraIndexId,dataSourceName,urls,forceSync=false)
         var dataSourceResponse = await startKendraSync(kendraIndexId,dataSourceName,forceSync)
         var documents = [];
         for(url of urls){
+            console.log("Retrieving " + url)
             var page =  await getPage(url)
             var document = await createKendraDocument(page.Page,dataSourceResponse.ExecutionId,dataSourceResponse.DataSourceId)
             documents.push(document);
@@ -283,6 +285,7 @@ async function indexPages(kendraIndexId,dataSourceName,urls,forceSync=false)
         page.Browser.close();
        } catch(err){
          console.log(err)
+         throw err;
        }
 }
 

@@ -107,14 +107,25 @@ module.exports=Object.assign(
         "Variables": {
           DEFAULT_SETTINGS_PARAM:{"Ref":"DefaultQnABotSettings"},
           CUSTOM_SETTINGS_PARAM:{"Ref":"CustomQnABotSettings"},
-          DATASOURCE_NAME:{"Fn::Join":["",["QnaBotKendraCrawler-",{"Ref":"AWS::StackId"}]]}
+          DATASOURCE_NAME:{
+            "Fn::Join":[
+              "-",[
+                "QNABotKendraCrawler",
+                {"Fn::Select":[2,
+                  {"Fn::Split":[
+                    "-",{"Ref":"DefaultQnABotSettings"}
+                  ]},
+                ]}
+              ]
+            ]
+          }
         }
       },
       "Handler": "index.handler",
       "MemorySize": "1024",
       "Role": {"Fn::GetAtt": ["KendraCrawlerRole","Arn"]},
       "Runtime": "nodejs10.x",
-      "Timeout": 300,
+      "Timeout": 900,
       "Tags":[{
           Key:"Type",
           Value:"Export"
@@ -180,7 +191,7 @@ module.exports=Object.assign(
           "TranslatePost",
           "TranslateApiResource",
           "KendraCrawlerGet",
-          "KendrawCrawlerApiResource",
+          "KendraCrawlerApiResource",
           "InvokePermissionTranslateLambda"],
         "Properties": {
           "ServiceToken": { "Ref" : "CFNLambda" },
@@ -494,6 +505,7 @@ module.exports=Object.assign(
                 "kendra:BatchPutDocument",
                 "kendra:CreateDataSource",
                 "kendra:StartDataSourceSyncJob",
+                "kendra:StopDataSourceSyncJob",
                 "kendra:UpdateDataSource",
                 "ssm:GetParameter"
               ],
