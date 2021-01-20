@@ -185,6 +185,103 @@ module.exports=Object.assign(
           }]
         }
       },
+        "KendraTopicApiGateRole": {
+           "Type": "AWS::IAM::Role",
+           "Properties": {
+              "AssumeRolePolicyDocument": {
+                 "Version": "2012-10-17",
+                 "Statement": [
+                    {
+                       "Effect": "Allow",
+                       "Principal": {
+                          "Service": [
+                             "apigateway.amazonaws.com"
+                          ]
+                       },
+                       "Action": [
+                          "sts:AssumeRole"
+                       ]
+                    }
+                 ]
+              },
+              "Path": "/",
+              "Policies": [
+                 {
+                    "PolicyName": "GatewayRolePolicy",
+                    "PolicyDocument": {
+                       "Version": "2012-10-17",
+                       "Statement": [
+                          {
+                             "Effect": "Allow",
+                             "Action": [
+                                "sns:Publish"
+                             ],
+                             "Resource": {Ref:"KendraCrawlerSnsTopic"}
+                          },
+                          {
+                             "Effect": "Allow",
+                             "Action": [
+                                "logs:PutLogEvents",
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream"
+                             ],
+                             "Resource": "*"
+                          }
+                       ]
+                    }
+                 }
+              ]
+           }
+        },
+        
+          "KendraCrawlerPost": {
+             "Type": "AWS::ApiGateway::Method",
+             "Properties": {
+                "AuthorizationType": "AWS_IAM",
+                "HttpMethod": "POST",
+                "RequestParameters": {
+                   "method.request.querystring.message": false,
+                   "method.request.querystring.subject": false,
+                   "method.request.querystring.topic": false
+                },
+                "Integration": {
+                   "Type": "AWS",
+                   "Credentials": {
+                      "Fn::GetAtt": [
+                         "KendraTopicApiGateRole",
+                         "Arn"
+                      ]
+                   },
+                   "Uri": {
+                      "Fn::Join": ["",["arn:aws:apigateway:",{Ref:"AWS::Region"},":sns:action/Publish"]]
+                   },
+                   "IntegrationHttpMethod": "POST",
+                   "RequestParameters": {
+                      "integration.request.querystring.TopicArn": "method.request.querystring.topic",
+                      "integration.request.querystring.Subject": "method.request.querystring.subject",
+                      "integration.request.querystring.Message": "method.request.querystring.message"
+                   },
+                   "IntegrationResponses": [
+                      {
+                         "StatusCode": 200,
+                         "ResponseTemplates": {
+                            "application/json": "{\"status\":\"OK\"}"
+                         }
+                      }
+                   ]
+                },
+                "MethodResponses": [
+                   {
+                      "StatusCode": 200
+                   }
+                ],
+                "RestApiId": {"Ref": "Api"},
+                "ResourceId": {"Ref": "KendraCrawlerApiResource"},
+       
+             }
+          },
+       
+     
       "InvokePermissionKendraCrawlerLambda": {
         "Type": "AWS::Lambda::Permission",
         "Properties": {
@@ -285,41 +382,41 @@ module.exports=Object.assign(
          ],
         }
       },      
-      "KendraCrawlerPost": {
-        "Type": "AWS::ApiGateway::Method",
-        "Properties": {
-          "AuthorizationType": "AWS_IAM",
-          "HttpMethod": "POST",
-          "RestApiId": {"Ref": "Api"},
-          "ResourceId": {"Ref": "KendraCrawlerApiResource"},
-          "Integration": {
-            "Type": "AWS",
-            "IntegrationHttpMethod": "POST",
-            "Uri": {
-              "Fn::Join": [
-                "",
-                [
-                  "arn:aws:apigateway:",
-                  {"Ref": "AWS::Region"},
-                  ":lambda:path/2015-03-31/functions/",
-                  {"Fn::GetAtt": ["KendraCrawlerLambda", "Arn"]},
-                  "/invocations"
-                ]
-              ]
-            },
-            "IntegrationResponses": [
-               {
-                  "StatusCode": 200
-               }
-            ]
-         },
-         "MethodResponses": [
-            {
-               "StatusCode": 200
-            }
-         ],
-        }
-      },
+    //   "KendraCrawlerPost": {
+    //     "Type": "AWS::ApiGateway::Method",
+    //     "Properties": {
+    //       "AuthorizationType": "AWS_IAM",
+    //       "HttpMethod": "POST",
+    //       "RestApiId": {"Ref": "Api"},
+    //       "ResourceId": {"Ref": "KendraCrawlerApiResource"},
+    //       "Integration": {
+    //         "Type": "AWS",
+    //         "IntegrationHttpMethod": "POST",
+    //         "Uri": {
+    //           "Fn::Join": [
+    //             "",
+    //             [
+    //               "arn:aws:apigateway:",
+    //               {"Ref": "AWS::Region"},
+    //               ":lambda:path/2015-03-31/functions/",
+    //               {"Fn::GetAtt": ["KendraCrawlerLambda", "Arn"]},
+    //               "/invocations"
+    //             ]
+    //           ]
+    //         },
+    //         "IntegrationResponses": [
+    //            {
+    //               "StatusCode": 200
+    //            }
+    //         ]
+    //      },
+    //      "MethodResponses": [
+    //         {
+    //            "StatusCode": 200
+    //         }
+    //      ],
+    //     }
+    //   },
     "SyncCodeVersion":{
         "Type": "Custom::S3Version",
         "Properties": {
