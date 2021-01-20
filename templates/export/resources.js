@@ -360,6 +360,42 @@ module.exports = Object.assign({
         }
     }
 },
+KendraCrawlerScheduleRule:{
+  "Type" : "AWS::Events::Rule",
+  "Properties" : {
+      "Description" : "Run Kendra Web Crawler based on a schedule",
+      "ScheduleExpression" : "rate(1 day)",
+      "State" : "DISABLED",
+      Targets: [ 
+        {
+          Arn: {
+            "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"],
+          },
+          Id: "KendraCrawler",
+        },
+      ],
+
+    }
+},
+"KendraCrawlerSchedulePermission": {
+  "Type": "AWS::Lambda::Permission",
+  "Properties": {
+      "FunctionName": {
+          "Fn::GetAtt": [
+              "KendraCrawlerLambda",
+              "Arn"
+          ]
+      },
+      "Action": "lambda:InvokeFunction",
+      "Principal": "events.amazonaws.com",
+      "SourceArn": {
+          "Fn::GetAtt": [
+              "KendraCrawlerScheduleRule",
+              "Arn"
+          ]
+      }
+  }
+},
   ConnectGet: {
     Type: "AWS::ApiGateway::Method",
     Properties: {
