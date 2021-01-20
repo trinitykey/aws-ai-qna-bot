@@ -111,6 +111,21 @@ module.exports = Object.assign({
         Variables: {
           DEFAULT_SETTINGS_PARAM: { Ref: "DefaultQnABotSettings" },
           CUSTOM_SETTINGS_PARAM: { Ref: "CustomQnABotSettings" },
+          CLOUDWATCH_RULENAME: {
+            "Fn::Join": [
+              //Can't Ref the CloudWatchRule - creates circular dependency
+              "-",
+              [
+                "KendraCrawlerRule",
+                {
+                  "Fn::Select": [
+                    2,
+                    { "Fn::Split": ["-", { Ref: "DefaultQnABotSettings" }] },
+                  ],
+                },
+              ],
+            ],
+          },
           DATASOURCE_NAME: {
             "Fn::Join": [
               "-",
@@ -317,56 +332,24 @@ module.exports = Object.assign({
       stage: "prod",
       ApiDeploymentId: { Ref: "ApiDeploymentId" },
       Encryption: { Ref: "Encryption" },
-    }},
-    CloudWatchEventRule: {
-      Type: "AWS::Events::Rule",
-      Properties: {
-        Description: "Parameter Setting Change",
-        EventPattern: {
-          source: ["aws.ssm"],
-          "detail-type": ["Parameter Store Change"],
-          detail: {
-            name: [{ Ref: "CustomQnABotSettings" }],
-            operation: ["Update"],
-          },
-        },
-        State: "ENABLED",
-        Targets: [ //Add Lambda targets here as needed
-          {
-            Arn: {
-              "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"],
-            },
-            Id: "KendraCrawler",
-          },
-        ],
-      },
     },
-  "ParameterChangeRuleKendraCrawlerPermission": {
-    "Type": "AWS::Lambda::Permission",
-    "Properties": {
-        "FunctionName": {
-            "Fn::GetAtt": [
-                "KendraCrawlerLambda",
-                "Arn"
-            ]
+  },
+  CloudWatchEventRule: {
+    Type: "AWS::Events::Rule",
+    Properties: {
+      Description: "Parameter Setting Change",
+      Name: "TEMP",
+      EventPattern: {
+        source: ["aws.ssm"],
+        "detail-type": ["Parameter Store Change"],
+        detail: {
+          name: [{ Ref: "CustomQnABotSettings" }],
+          operation: ["Update"],
         },
-        "Action": "lambda:InvokeFunction",
-        "Principal": "events.amazonaws.com",
-        "SourceArn": {
-            "Fn::GetAtt": [
-                "CloudWatchEventRule",
-                "Arn"
-            ]
-        }
-    }
-},
-KendraCrawlerScheduleRule:{
-  "Type" : "AWS::Events::Rule",
-  "Properties" : {
-      "Description" : "Run Kendra Web Crawler based on a schedule",
-      "ScheduleExpression" : "rate(1 day)",
-      "State" : "DISABLED",
-      Targets: [ 
+      },
+      State: "ENABLED",
+      Targets: [
+        //Add Lambda targets here as needed
         {
           Arn: {
             "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"],
@@ -374,28 +357,66 @@ KendraCrawlerScheduleRule:{
           Id: "KendraCrawler",
         },
       ],
-
-    }
-},
-"KendraCrawlerSchedulePermission": {
-  "Type": "AWS::Lambda::Permission",
-  "Properties": {
-      "FunctionName": {
-          "Fn::GetAtt": [
-              "KendraCrawlerLambda",
-              "Arn"
-          ]
+    },
+  },
+  ParameterChangeRuleKendraCrawlerPermission: {
+    Type: "AWS::Lambda::Permission",
+    Properties: {
+      FunctionName: {
+        "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"],
       },
-      "Action": "lambda:InvokeFunction",
-      "Principal": "events.amazonaws.com",
-      "SourceArn": {
-          "Fn::GetAtt": [
-              "KendraCrawlerScheduleRule",
-              "Arn"
-          ]
-      }
-  }
-},
+      Action: "lambda:InvokeFunction",
+      Principal: "events.amazonaws.com",
+      SourceArn: {
+        "Fn::GetAtt": ["CloudWatchEventRule", "Arn"],
+      },
+    },
+  },
+  KendraCrawlerScheduleRule: {
+    Type: "AWS::Events::Rule",
+    DependsOn:"CloudWatchEventRule",
+    Properties: {
+      Description: "Run Kendra Web Crawler based on a schedule",
+      ScheduleExpression: "rate(1 day)",
+      Name: {
+        // KendraCrawlerLambda needs the name of the Rule.  Can't Ref the resource as an environment variable.  Creates a circular dependency
+        "Fn::Join": [
+          "-",
+          [
+            "KendraCrawlerRule",
+            {
+              "Fn::Select": [
+                2,
+                { "Fn::Split": ["-", { Ref: "DefaultQnABotSettings" }] },
+              ],
+            },
+          ],
+        ],
+      },
+      State: "DISABLED",
+      Targets: [
+        {
+          Arn: {
+            "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"],
+          },
+          Id: "KendraCrawler",
+        },
+      ],
+    },
+  },
+  KendraCrawlerSchedulePermission: {
+    Type: "AWS::Lambda::Permission",
+    Properties: {
+      FunctionName: {
+        "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"],
+      },
+      Action: "lambda:InvokeFunction",
+      Principal: "events.amazonaws.com",
+      SourceArn: {
+        "Fn::GetAtt": ["KendraCrawlerScheduleRule", "Arn"],
+      },
+    },
+  },
   ConnectGet: {
     Type: "AWS::ApiGateway::Method",
     Properties: {
@@ -707,6 +728,25 @@ KendraCrawlerScheduleRule:{
               "ssm:GetParameter",
             ],
             Resource: ["*"],
+          },
+          {
+            Effect: "Allow",
+            Action: ["events:DescribeRule", "events:PutRule"],
+            Resource: {
+              "Fn::Join": [
+                //Can't Ref the CloudWatchRule - creates circular dependency
+                "",
+                ["arn:aws:events:",{"Ref":"AWS::Region"},":",{"Ref":"AWS::AccountId"},":rule/",
+                  "KendraCrawlerRule-",
+                  {
+                    "Fn::Select": [
+                      2,
+                      { "Fn::Split": ["-", { Ref: "DefaultQnABotSettings" }] },
+                    ],
+                  },
+                ],
+              ],
+            },
           },
         ],
       },

@@ -1,7 +1,8 @@
 const chromium = require('chrome-aws-lambda');
 const AWS = require("aws-sdk");
 const crypto = require('crypto');
-const _=require('lodash')
+const _=require('lodash');
+const { settings } = require('cluster');
 
 AWS.config.update({region:'us-east-1'});
 
@@ -248,9 +249,39 @@ async function getSyncJobStatus(kendraIndexId,dataSourceId,executionId){
 
 
 }
+
+async function updateCloudWatchEvent(ruleName,settings){
+    var cloudwatchevents = new AWS.CloudWatchEvents();
+    var assignedRules
+    var rule = await cloudwatchevents.describeRule({Name:ruleName}).promise();
+    var currentState = settings.ENABLE_KENDRA_WEB_CRAWLER ? "ENABLED" : "DISABLED";
+    console.log(`RuleName ${ruleName} KENDRA_CRAWLER_SCHEDULE ${settings.KENDRA_CRAWLER_SCHEDULE} settings State ${currentState}`)
+    console.log(`RuleName ${ruleName} current schedule        ${rule.ScheduleExpression} current state  ${rule.State }`)
+
+    if(rule.ScheduleExpression != settings.KENDRA_CRAWLER_SCHEDULE || rule.State != currentState){
+        console.log(`Updating rule ${ruleName}`)
+        var params = {
+                Name: rule.Name,
+                Description: rule.Description,
+                ScheduleExpression: settings.KENDRA_CRAWLER_SCHEDULE,
+                State: currentState,
+            };
+        var result = await cloudwatchevents.putRule(params).promise();
+        console.log("Rule Updated " + JSON.stringify(result));
+
+    }
+}
+
 exports.handler = async (event, context,callback) => {
+    console.log("Incoming event " + JSON.stringify(event))
+
     try{
         var settings = await get_settings();
+        if(event["detail-type"] == "Parameter Store Change")
+        {
+            await updateCloudWatchEvent(process.env.CLOUDWATCH_RULENAME,settings);
+            return;
+        }
 
         var kendraIndexId = settings.KENDRA_CRAWLER_INDEX;
         if(!kendraIndexId)
@@ -258,7 +289,7 @@ exports.handler = async (event, context,callback) => {
             throw "KENDRA_CRAWLER_INDEX was not specified in settings"
         }
         var urls = settings.KENDRA_CRAWLER_URLS.split(",");
-        console.log("Indexing pages asynchronously...")
+        await updateCloudWatchEvent(process.env.CLOUDWATCH_RULENAME,settings)
         await indexPages(kendraIndexId,process.env.DATASOURCE_NAME,urls,true);
         return;
 
