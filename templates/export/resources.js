@@ -174,12 +174,24 @@ module.exports=Object.assign(
           "RestApiId": {"Ref": "Api"}
         }
       },
+      "KendraCrawlerSnsTopic":
+      {
+        "Type":"AWS::SNS::Topic",
+        "Properties":{
+          "Subscription":[
+          {
+            "Endpoint":{"Fn::GetAtt":["KendraCrawlerLambda","Arn"]},
+            "Protocol":"lambda"
+          }]
+        }
+      },
       "InvokePermissionKendraCrawlerLambda": {
         "Type": "AWS::Lambda::Permission",
         "Properties": {
           "Action": "lambda:InvokeFunction",
           "FunctionName": {"Fn::GetAtt": ["KendraCrawlerLambda", "Arn"]},
-          "Principal": "apigateway.amazonaws.com"
+          "SourceArn":{"Ref":"KendraCrawlerSnsTopic"},
+          "Principal": "sns.amazonaws.com"
         }
       },
       "Deployment":{
