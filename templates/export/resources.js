@@ -170,7 +170,7 @@ module.exports=Object.assign(
         "Type": "AWS::ApiGateway::Resource",
         "Properties": {
           "ParentId": {"Ref": "ApiRootResourceId"},
-          "PathPart": "crawler",
+          "PathPart": "crawler2",
           "RestApiId": {"Ref": "Api"}
         }
       },
@@ -190,7 +190,7 @@ module.exports=Object.assign(
           "InvokePermissionConnectLambda",
           "TranslatePost",
           "TranslateApiResource",
-          "KendraCrawlerGet",
+          "KendraCrawlerPost",
           "KendraCrawlerApiResource",
           "InvokePermissionTranslateLambda"],
         "Properties": {
@@ -273,7 +273,7 @@ module.exports=Object.assign(
          ],
         }
       },      
-      "KendraCrawlerGet": {
+      "KendraCrawlerPost": {
         "Type": "AWS::ApiGateway::Method",
         "Properties": {
           "AuthorizationType": "AWS_IAM",
@@ -282,7 +282,7 @@ module.exports=Object.assign(
           "ResourceId": {"Ref": "KendraCrawlerApiResource"},
           "Integration": {
             "Type": "AWS",
-            "IntegrationHttpMethod": "GET",
+            "IntegrationHttpMethod": "POST",
             "Uri": {
               "Fn::Join": [
                 "",

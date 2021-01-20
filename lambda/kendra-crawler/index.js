@@ -248,7 +248,7 @@ async function getSyncJobStatus(kendraIndexId,dataSourceId,executionId){
 
 
 }
-exports.handler = async (event, context) => {
+exports.handler = async (event, context,callback) => {
     try{
         var settings = await get_settings();
 
@@ -258,6 +258,7 @@ exports.handler = async (event, context) => {
             throw "KENDRA_CRAWLER_INDEX was not specified in settings"
         }
         var urls = settings.KENDRA_CRAWLER_URLS.split(",");
+        console.log("Indexing pages asynchronously...")
         await indexPages(kendraIndexId,process.env.DATASOURCE_NAME,urls,true);
         return;
 
