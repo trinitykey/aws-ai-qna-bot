@@ -14,6 +14,19 @@
             v-btn(@click="SaveSettings") Save
             //- v-btn Add New parameter
             v-btn(@click="resetToDefaults") Reset to defaults
+    
+    v-btn(bottom fab fixed right @click="showAddModal = true")
+        v-icon(color ="primary") add
+    v-dialog(v-model ="showAddModal")
+        v-card
+            v-card-title New Setting
+            v-card-text
+                v-text-field(label="Name")
+                v-text-field(label="Value")
+            v-card-actions
+                v-spacer
+                v-btn(@click="addSetting") Add
+                v-btn(@click="closeModal") Cancel
             
 </template>
 
@@ -38,6 +51,7 @@ module.exports = {
     data: function () {
         var self = this
         return {
+            showAddModal: false,
             mergedSettings: {},
             defaultSettings: {},
             customSettings: {},
@@ -93,6 +107,15 @@ module.exports = {
                 window.scrollTo(0, 0);
             }
 
+        },
+        showModal: async function() {
+            this.showAddModal = true;
+        },
+        closeModal: async function() {
+            this.showModal = false;
+        },
+        addSetting: async function() {
+            console.log('hi tom');
         }
     }
 }
