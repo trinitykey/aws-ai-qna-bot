@@ -188,12 +188,71 @@ module.exports = Object.assign({
       Principal: "apigateway.amazonaws.com",
     },
   },
-  KendraCrawlerApiResource: {
+  KendraCrawlerApiRootResource: {
     Type: "AWS::ApiGateway::Resource",
     Properties: {
       ParentId: { Ref: "ApiRootResourceId" },
-      PathPart: "crawler2",
+      PathPart: "crawler",
       RestApiId: { Ref: "Api" },
+    },
+  },
+  KendraCrawlerApiResource: {
+    Type: "AWS::ApiGateway::Resource",
+    Properties: {
+      ParentId: { Ref: "KendraCrawlerApiRootResource" },
+      PathPart: "start",
+      RestApiId: { Ref: "Api" },
+    },
+  },
+  KendraCrawlerStatusRootApiResource: {
+    Type: "AWS::ApiGateway::Resource",
+    Properties: {
+      ParentId: { Ref: "KendraCrawlerApiRootResource" },
+      PathPart: "{proxy+}",
+      RestApiId: { Ref: "Api" },
+    },
+  },
+  KendraCrawlerStatusGet: {
+    Type: "AWS::ApiGateway::Method",
+    Properties: {
+      AuthorizationType: "AWS_IAM",
+      HttpMethod: "POST",
+      RestApiId: { Ref: "Api" },
+      ResourceId: { Ref: "KendraCrawlerStatusRootApiResource" },
+      Integration: {
+        Type: "AWS_PROXY",
+        IntegrationHttpMethod: "POST",
+        Uri: {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:apigateway:",
+              { Ref: "AWS::Region" },
+              ":lambda:path/2015-03-31/functions/",
+              { "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"] },
+              "/invocations",
+            ],
+          ],
+        },
+        IntegrationResponses: [
+          {
+            StatusCode: 200,
+          },
+        ],
+      },
+      MethodResponses: [
+        {
+          StatusCode: 200,
+        },
+      ],
+    },
+  },
+  InvokePermissionKendraCrawlerStatusGetLambda: {
+    Type: "AWS::Lambda::Permission",
+    Properties: {
+      Action: "lambda:InvokeFunction",
+      FunctionName: { "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"] },
+      Principal: "apigateway.amazonaws.com",
     },
   },
   KendraCrawlerSnsTopic: {
@@ -323,7 +382,9 @@ module.exports = Object.assign({
       "TranslateApiResource",
       "KendraCrawlerPost",
       "KendraCrawlerApiResource",
+      "KendraCrawlerStatusRootApiResource",
       "InvokePermissionTranslateLambda",
+      "KendraCrawlerStatusGet"
     ],
     Properties: {
       ServiceToken: { Ref: "CFNLambda" },
@@ -490,41 +551,6 @@ module.exports = Object.assign({
       ],
     },
   },
-  //   "KendraCrawlerPost": {
-  //     "Type": "AWS::ApiGateway::Method",
-  //     "Properties": {
-  //       "AuthorizationType": "AWS_IAM",
-  //       "HttpMethod": "POST",
-  //       "RestApiId": {"Ref": "Api"},
-  //       "ResourceId": {"Ref": "KendraCrawlerApiResource"},
-  //       "Integration": {
-  //         "Type": "AWS",
-  //         "IntegrationHttpMethod": "POST",
-  //         "Uri": {
-  //           "Fn::Join": [
-  //             "",
-  //             [
-  //               "arn:aws:apigateway:",
-  //               {"Ref": "AWS::Region"},
-  //               ":lambda:path/2015-03-31/functions/",
-  //               {"Fn::GetAtt": ["KendraCrawlerLambda", "Arn"]},
-  //               "/invocations"
-  //             ]
-  //           ]
-  //         },
-  //         "IntegrationResponses": [
-  //            {
-  //               "StatusCode": 200
-  //            }
-  //         ]
-  //      },
-  //      "MethodResponses": [
-  //         {
-  //            "StatusCode": 200
-  //         }
-  //      ],
-  //     }
-  //   },
   SyncCodeVersion: {
     Type: "Custom::S3Version",
     Properties: {

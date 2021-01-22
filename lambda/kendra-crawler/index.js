@@ -147,18 +147,28 @@ async function createKendraDocument(page,jobExecutionId,dataSourceId){
     return doc;
 }
 
+async function getDataSourceIdFromDataSourceName(kendraIndexId,dataSourceName){
+    var kendra = new AWS.Kendra();
+    console.log(`Finding datasourceId for ${dataSourceName} for IndexID ${kendraIndexId}`)
+    var foundDataSourceIds = (await kendra.listDataSources({IndexId: kendraIndexId}).promise()).SummaryItems.filter(s => s.Name == dataSourceName).map(m => m.Id)
+    if(foundDataSourceIds.length == 0)
+    {
+        return undefined;
+    }
+    return foundDataSourceIds[0]
+
+}
 async function startKendraSync(kendraIndexId,name,forceSync=false)
 {
     var kendra = new AWS.Kendra();
-
+    var dataSourceId;
     var params = {
         IndexId: kendraIndexId, /* required */
       };
     console.log(`Starting Kendra sync for IndexId ${kendraIndexId} DataSource Name ${name}`)
-    foundDataSourceIds = (await kendra.listDataSources({IndexId: kendraIndexId}).promise()).SummaryItems.filter(s => s.Name == name).map(m => m.Id)
-
-
-    if(foundDataSourceIds.length == 0)
+    foundDataSourceId = await getDataSourceIdFromDataSourceName(kendraIndexId,name);
+    console.log(`Found datasourceId ${foundDataSourceId}`)
+    if(!foundDataSourceId)
     {
         var params = {
             IndexId: kendraIndexId, 
@@ -169,8 +179,9 @@ async function startKendraSync(kendraIndexId,name,forceSync=false)
         var createResponse = await kendra.createDataSource(params).promise();
         dataSourceId = createResponse.Id
     }else{
-        dataSourceId = foundDataSourceIds[0]
+        dataSourceId = foundDataSourceId;
     }
+    console.log("Getting sync Job status")
     var status = await getSyncJobStatus(kendraIndexId,dataSourceId)
 
     if(status.Status != "COMPLETE" && !forceSync){
@@ -189,6 +200,20 @@ async function startKendraSync(kendraIndexId,name,forceSync=false)
     }
 
 
+}
+
+async function stopSyncJob(kendraIndexId,dataSourceName){
+    var kendra = new AWS.Kendra();
+    var indexId = await getDataSourceIdFromDataSourceName(kendraIndexId,dataSourceName)
+    console.log(`Stop syncing Datasource ${dataSourceName}:${indexId}`)
+    var status = await getSyncJobStatus(kendraIndexId,indexId);
+    if(status.Status == "PENDING"){
+        console.log(`Stopping data source ${indexId} on Kendra Index ${kendraIndexId}`)
+        kendra.stopDataSourceSyncJob({
+            Id: indexId,
+            IndexId:kendraIndexId
+        })
+    }
 }
 
 async function putDocuments(kendraIndexId,dataSourceId,documents){
@@ -220,7 +245,12 @@ async function getSyncJobStatus(kendraIndexId,dataSourceId,executionId){
     if(executionId){
         var executionSyncJobs =  syncJobResult["History"].filter(h => h.ExecutionId == executionId)
         if (executionSyncJobs.length != 1){
-            return {"Status":"","ErrorMessage":""}
+            return {
+                "Status":"",
+                "ErrorMessage":"",
+                "StartTime":"",
+                "ExecutionId":""
+            }
         }
         var errorMessage =""
         if(status != "SUCCEEDED"){
@@ -232,16 +262,22 @@ async function getSyncJobStatus(kendraIndexId,dataSourceId,executionId){
         }
         
     }
-    var dataSourceSyncJobs = syncJobResult["History"].filter(h => h.Status == "SYNCING" && h.Staatus  != "SYNCING_INDEXING")
-    if(dataSourceSyncJobs.length != 0){
+    console.log("SyncJobHistory")
+    console.log(JSON.stringify(syncJobResult["History"]))
+    var dataSourceSyncJob = syncJobResult["History"].sort((a,b) => a.StartTime > b.StartTime ? -1 : 1)[0];
+    var pendingStatus = ["SYNCING","INCOMPLETE","STOPPING","SYNCING_INDEXING"]
+    if(pendingStatus.includes(dataSourceSyncJob.Status)){
         return {
             Status:"PENDING",
-            ErrorMessage:""
+            ErrorMessage:"",
+            "StartTime": dataSourceSyncJob.StartTime,
+            ExecutionId:dataSourceSyncJob.ExecutionId
         }
     }
     else{
         return{
-            Status:"COMPLETE",
+            Status:dataSourceSyncJob.Status,
+            "StartTime": dataSourceSyncJob.StartTime,
             ErrorMessage:""
         }
 
@@ -257,7 +293,25 @@ async function updateCloudWatchEvent(ruleName,settings){
     var currentState = settings.ENABLE_KENDRA_WEB_CRAWLER ? "ENABLED" : "DISABLED";
     console.log(`RuleName ${ruleName} KENDRA_CRAWLER_SCHEDULE ${settings.KENDRA_CRAWLER_SCHEDULE} settings State ${currentState}`)
     console.log(`RuleName ${ruleName} current schedule        ${rule.ScheduleExpression} current state  ${rule.State }`)
-
+    //only allow rate() syntax because that is easy to parse and put guard rails around
+    if(!(settings.KENDRA_CRAWLER_SCHEDULE.startsWith("rate(") && settings.KENDRA_CRAWLER_SCHEDULE.endsWith(")")))
+    {
+        throw "KENDRA_CRAWLER_SCHEDULE must use CloudWatch rate() format -- see https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions"
+    }
+    var timeParts = settings.KENDRA_CRAWLER_SCHEDULE.replace("rate(","").replace(")","").split(" ");
+    console.log("parts " + JSON.stringify(timeParts));
+    if (timeParts.length != 2)
+    {
+        throw "Invalid schedule format.  See https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions for valid expressions"
+    }
+    validUnits = ["hour","hours","day","days"]
+    if(!validUnits.includes(timeParts[1]))
+    {
+        throw "Kendra Crawler only supports hours and days";
+    }
+    if(parseInt(timeParts[0]) != timeParts[0]){
+        throw "Only integer values are supported";
+    }
     if(rule.ScheduleExpression != settings.KENDRA_CRAWLER_SCHEDULE || rule.State != currentState){
         console.log(`Updating rule ${ruleName}`)
         var params = {
@@ -277,13 +331,39 @@ exports.handler = async (event, context,callback) => {
 
     try{
         var settings = await get_settings();
+        var kendraIndexId = settings.KENDRA_CRAWLER_INDEX;
         if(event["detail-type"] == "Parameter Store Change")
         {
             await updateCloudWatchEvent(process.env.CLOUDWATCH_RULENAME,settings);
             return;
         }
+        if(event["path"] == "/crawler/status"){
+            var dataSourceId = await getDataSourceIdFromDataSourceName(kendraIndexId,process.env.DATASOURCE_NAME)
+            if(!dataSourceId){
+                return {
+                    "statusCode": 200,
+                    "body": JSON.stringify({"Status":"NOTCREATED"}),
+                    "isBase64Encoded": false
+                };    
+            }
 
-        var kendraIndexId = settings.KENDRA_CRAWLER_INDEX;
+            var syncStatus = await getSyncJobStatus(kendraIndexId,dataSourceId) 
+            return {
+                "statusCode": 200,
+                "body": JSON.stringify({"Status":syncStatus}),
+                "isBase64Encoded": false
+            };
+        }
+        if(event["path"] == "/crawler/stop"){
+            console.log("Stopping Sync for " + kendraIndexId)
+            await stopSyncJob(kendraIndexId,process.env.DATASOURCE_NAME)
+            return {
+                "statusCode": 200,
+                "body": JSON.stringify({"Status":"SUCCESS"}),
+                "isBase64Encoded": false
+            };
+        }
+
         if(!kendraIndexId)
         {
             throw "KENDRA_CRAWLER_INDEX was not specified in settings"
