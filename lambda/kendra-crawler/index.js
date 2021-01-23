@@ -350,7 +350,7 @@ exports.handler = async (event, context,callback) => {
             var syncStatus = await getSyncJobStatus(kendraIndexId,dataSourceId) 
             return {
                 "statusCode": 200,
-                "body": JSON.stringify({"Status":syncStatus}),
+                "body": JSON.stringify(syncStatus),
                 "isBase64Encoded": false
             };
         }
