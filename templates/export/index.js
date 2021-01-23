@@ -30,5 +30,6 @@ module.exports={
         "ApiDeploymentId":{"Type":"String"},
         "DefaultQnABotSettings": {"Type":"String"},
         "CustomQnABotSettings": {"Type":"String"},
+        "KendraCrawlerSnsTopic":{"Type":"String"}
+        }
     }
-}

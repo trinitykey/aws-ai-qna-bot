@@ -20,6 +20,7 @@ module.exports={
                 "Encryption":{"Ref":"Encryption"},
                 "Stage":{"Ref":"Stage"},
                 "ApiDeploymentId":{"Ref":"Deployment"},
+                "KendraCrawlerSnsTopic":{"Ref":"KendraCrawlerSnsTopic"},
 
                 "DefaultQnABotSettings":{"Ref":"DefaultQnABotSettings"},
                 "CustomQnABotSettings":{"Ref":"CustomQnABotSettings"},

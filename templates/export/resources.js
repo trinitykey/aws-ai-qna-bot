@@ -255,16 +255,14 @@ module.exports = Object.assign({
       Principal: "apigateway.amazonaws.com",
     },
   },
-  KendraCrawlerSnsTopic: {
-    Type: "AWS::SNS::Topic",
-    Properties: {
-      Subscription: [
-        {
-          Endpoint: { "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"] },
-          Protocol: "lambda",
-        },
-      ],
-    },
+  KendraSnsLambdaSubscription:
+  {
+    "Type" : "AWS::SNS::Subscription",
+    "Properties" : {
+        "Endpoint" : {"Fn::GetAtt":["KendraCrawlerLambda","Arn"]},
+        "Protocol" : "lambda",
+        "TopicArn" : {"Ref":"KendraCrawlerSnsTopic"}
+      }
   },
   KendraTopicApiGateRole: {
     Type: "AWS::IAM::Role",
