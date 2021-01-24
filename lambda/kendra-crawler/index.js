@@ -3,6 +3,8 @@ const AWS = require("aws-sdk");
 const crypto = require("crypto");
 const _ = require("lodash");
 const { settings } = require("cluster");
+const sleep = require('util').promisify(setTimeout)
+
 
 AWS.config.update({ region: "us-east-1" });
 
@@ -19,6 +21,19 @@ function isJson(str) {
   }
   return true;
 }
+
+async function retry(count, func) {
+    var retryCount = 0;
+    while (retryCount < count) {
+      try {
+        return await func();
+      } catch (err) {
+        console.log(`retrying error:` + JSON.stringify(err));
+        retryCount++;
+        await sleep(3000);
+      }
+    }
+  }
 
 function str2bool(settings) {
   var new_settings = _.mapValues(settings, (x) => {
@@ -170,9 +185,9 @@ async function getDataSourceIdFromDataSourceName(
   console.log(
     `Finding datasourceId for ${dataSourceName} for IndexID ${kendraIndexId}`
   );
-  var foundDataSourceIds = (await kendra
+  var foundDataSourceIds = (await retry(3,async ()=> await kendra
     .listDataSources({ IndexId: kendraIndexId })
-    .promise()).SummaryItems.filter((s) => s.Name == dataSourceName).map(
+    .promise())).SummaryItems.filter((s) => s.Name == dataSourceName).map(
     (m) => m.Id
   );
   if (foundDataSourceIds.length == 0) {
@@ -273,12 +288,12 @@ async function putDocuments(kendraIndexId, dataSourceId, documents) {
 
 async function getSyncJobStatus(kendraIndexId, dataSourceId, executionId) {
   var kendra = new AWS.Kendra();
-  var syncJobResult = await kendra
+  var syncJobResult = await retry(3,async ()=> await kendra
     .listDataSourceSyncJobs({
       Id: dataSourceId,
       IndexId: kendraIndexId,
     })
-    .promise();
+    .promise());
   if (executionId) {
     var executionSyncJobs = syncJobResult["History"].filter(
       (h) => h.ExecutionId == executionId
