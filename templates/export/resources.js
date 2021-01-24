@@ -143,7 +143,7 @@ module.exports = Object.assign({
         },
       },
       Handler: "index.handler",
-      MemorySize: "1024",
+      MemorySize: "2048",
       Role: { "Fn::GetAtt": ["KendraCrawlerRole", "Arn"] },
       Runtime: "nodejs10.x",
       Timeout: 900,
