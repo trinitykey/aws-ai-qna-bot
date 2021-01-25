@@ -397,7 +397,6 @@ module.exports = Object.assign({
     Type: "AWS::Events::Rule",
     Properties: {
       Description: "Parameter Setting Change",
-      Name: "TEMP",
       EventPattern: {
         source: ["aws.ssm"],
         "detail-type": ["Parameter Store Change"],
