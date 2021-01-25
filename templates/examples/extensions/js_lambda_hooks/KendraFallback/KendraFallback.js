@@ -238,8 +238,8 @@ async function routeKendraRequest(event, context) {
     // process kendra query responses and update answer content
 
     /* default message text - can be overridden using QnABot SSM Parameter Store Custom Property */
-    let topAnswerMessage = "Amazon Kendra suggested answer. \n\n ";
-    let topAnswerMessageMd = "*Amazon Kendra suggested answer.* \n ";
+    let topAnswerMessage = event.req["_settings"]["ALT_SEARCH_KENDRA_TOP_ANSWER_MESSAGE"] + "\n\n"  //"Amazon Kendra suggested answer. \n\n ";
+    let topAnswerMessageMd = `*${event.req["_settings"]["ALT_SEARCH_KENDRA_TOP_ANSWER_MESSAGE"]}* \n `;
     let answerMessage = event.req["_settings"]["ALT_SEARCH_KENDRA_ANSWER_MESSAGE"] ;
     let answerMessageMd = `*${answerMessage}* \n `;
     let faqanswerMessage = 'Answer from Amazon Kendra FAQ.';
@@ -413,7 +413,7 @@ async function routeKendraRequest(event, context) {
             if (signS3Urls) {
                 element = signS3URL(element.Uri, expireSeconds)
             }
-            event.res.session.appContext.altMessages.markdown += `[${label}](${element.Uri})`;
+            event.res.session.appContext.altMessages.markdown += `[${label}](${element.uri ? element.uri : element.Uri})`;
         });
     }
     
@@ -443,7 +443,9 @@ async function routeKendraRequest(event, context) {
         _.set(event,"res.session.qnabotcontext.kendra.kendraQueryId",kendraQueryId) ;
         _.set(event,"res.session.qnabotcontext.kendra.kendraIndexId",kendraIndexId) ;
         _.set(event,"res.session.qnabotcontext.kendra.kendraResultId",kendraResultId) ;
-        _.set(event,"res.session.qnabotcontext.kendra.kendraResponsibleQid",event.res.result.qid) ;
+        if(event.res.result){
+            _.set(event,"res.session.qnabotcontext.kendra.kendraResponsibleQid",event.res.result.qid) ;
+        }
     }
     
     console.log("Returning event: ", JSON.stringify(event, null, 2));

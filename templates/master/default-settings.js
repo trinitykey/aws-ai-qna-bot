@@ -17,16 +17,17 @@ var default_settings = {
     ALT_SEARCH_KENDRA_INDEXES: [], // Add Kendra index to array to enable Amazon Kendra as a fallback source of answers
     ALT_SEARCH_KENDRA_S3_SIGNED_URLS: "false", // If S3 document URL is in the search result, convert to signed URL. Make sure IAM ExtensionLambdaRole has access to S3 objects in Kendra index.
     ALT_SEARCH_KENDRA_S3_SIGNED_URL_EXPIRE_SECS: 300, // Expiry time for signed URLs
-    ALT_SEARCH_KENDRA_MAX_DOCUMENT_COUNT: 2, // limit number of document search results returned by Kendra fallback
+    ALT_SEARCH_KENDRA_MAX_DOCUMENT_COUNT: 2, // limit number of document search results returned by Kendra fallback\
+    ALT_SEARCH_KENDRA_TOP_ANSWER_MESSAGE: "Amazon Kendra suggested answer.",
     ALT_SEARCH_KENDRA_ANSWER_MESSAGE: "While I did not find an exact answer, these search results from Amazon Kendra might be helpful.", //Message displayed when a search comes from Kemdra
     KENDRA_FAQ_INDEX: "", // Kendra Index specific for FAQ for if Kendra FAQ sync is enabled
     KENDRA_FAQ_CONFIG_MAX_RETRIES: 8,    //User can override number of max retries in AWS SDK configurations
     KENDRA_FAQ_CONFIG_RETRY_DELAY: 600,  //User can override number of miliseconds delay between retries in AWS SDK configurations
     KENDRA_FAQ_ES_FALLBACK: "true", // Optional ElasticSearch Fallback engine for if KendraFAQ fails
-    ENABLE_KENDRA_WEB_CRAWLER:"true", //Enables web crawler -- indexes pages specified by KENDRA_CRAWLER_URLS
-    KENDRA_CRAWLER_URLS: "",//comma separated list of urls for Kendra to crawler
-    KENDRA_CRAWLER_SCHEDULE: "rate(1 day)",//See https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html for valid expressions
-    KENDRA_CRAWLER_INDEX: "",//The index to use for the web crawler, a custom data source will automatically be added to the specified index.  The index will automatically be added to ALT_SEARCH_KENDRA_INDEXES
+    ENABLE_KENDRA_WEB_INDEXER:"true", //Enables web crawler -- indexes pages specified by KENDRA_INDEXER_URLS
+    KENDRA_INDEXER_URLS: "",//comma separated list of urls for Kendra to crawler
+    KENDRA_INDEXER_SCHEDULE: "rate(1 day)",//See https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html for valid expressions
+    KENDRA_WEB_PAGE_INDEX: "",//The index to use for the web crawler, a custom data source will automatically be added to the specified index.  The index will automatically be added to ALT_SEARCH_KENDRA_INDEXES
     ERRORMESSAGE: "Unfortunately I encountered an error when searching for your answer. Please ask me again later.",
     EMPTYMESSAGE: "You stumped me! Sadly I don't know how to answer your question.",
     DEFAULT_ALEXA_LAUNCH_MESSAGE: "Hello, Please ask a question",

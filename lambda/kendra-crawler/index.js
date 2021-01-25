@@ -3,8 +3,7 @@ const AWS = require("aws-sdk");
 const crypto = require("crypto");
 const _ = require("lodash");
 const { settings } = require("cluster");
-const sleep = require('util').promisify(setTimeout)
-
+const sleep = require("util").promisify(setTimeout);
 
 AWS.config.update({ region: "us-east-1" });
 
@@ -23,17 +22,17 @@ function isJson(str) {
 }
 
 async function retry(count, func) {
-    var retryCount = 0;
-    while (retryCount < count) {
-      try {
-        return await func();
-      } catch (err) {
-        console.log(`retrying error:` + JSON.stringify(err));
-        retryCount++;
-        await sleep(3000);
-      }
+  var retryCount = 0;
+  while (retryCount < count) {
+    try {
+      return await func();
+    } catch (err) {
+      console.log(`retrying error:` + JSON.stringify(err));
+      retryCount++;
+      await sleep(3000);
     }
   }
+}
 
 function str2bool(settings) {
   var new_settings = _.mapValues(settings, (x) => {
@@ -101,10 +100,10 @@ async function get_settings() {
 
 var browser = null;
 var page = null;
-var pageCount = 0
+var pageCount = 0;
 async function getPage(url) {
   let result = null;
-  let page = {}
+  let page = {};
   try {
     if (browser == null || page == null) {
       browser = await chromium.puppeteer.launch({
@@ -113,13 +112,9 @@ async function getPage(url) {
         executablePath: await chromium.executablePath,
         headless: chromium.headless,
         ignoreHTTPSErrors: true,
-      }
-
-      );
+      });
       page = await browser.newPage();
-
     }
-
 
     await page.goto(url);
 
@@ -185,11 +180,11 @@ async function getDataSourceIdFromDataSourceName(
   console.log(
     `Finding datasourceId for ${dataSourceName} for IndexID ${kendraIndexId}`
   );
-  var foundDataSourceIds = (await retry(3,async ()=> await kendra
-    .listDataSources({ IndexId: kendraIndexId })
-    .promise())).SummaryItems.filter((s) => s.Name == dataSourceName).map(
-    (m) => m.Id
-  );
+  var foundDataSourceIds = (await retry(
+    3,
+    async () =>
+      await kendra.listDataSources({ IndexId: kendraIndexId }).promise()
+  )).SummaryItems.filter((s) => s.Name == dataSourceName).map((m) => m.Id);
   if (foundDataSourceIds.length == 0) {
     return undefined;
   }
@@ -288,59 +283,77 @@ async function putDocuments(kendraIndexId, dataSourceId, documents) {
 
 async function getSyncJobStatus(kendraIndexId, dataSourceId, executionId) {
   var kendra = new AWS.Kendra();
-  var syncJobResult = await retry(3,async ()=> await kendra
-    .listDataSourceSyncJobs({
-      Id: dataSourceId,
-      IndexId: kendraIndexId,
-    })
-    .promise());
-  if (executionId) {
-    var executionSyncJobs = syncJobResult["History"].filter(
-      (h) => h.ExecutionId == executionId
+  try {
+    var syncJobResult = await retry(
+      3,
+      async () =>
+        await kendra
+          .listDataSourceSyncJobs({
+            Id: dataSourceId,
+            IndexId: kendraIndexId,
+          })
+          .promise()
     );
-    if (executionSyncJobs.length != 1) {
+    if (executionId) {
+      var executionSyncJobs = syncJobResult["History"].filter(
+        (h) => h.ExecutionId == executionId
+      );
+      if (executionSyncJobs.length != 1) {
+        return {
+          Status: "",
+          ErrorMessage: "",
+          StartTime: "",
+          ExecutionId: "",
+        };
+      }
+      var errorMessage = "";
+      if (status != "SUCCEEDED") {
+        errorMessage = currentStatus[0].ErrorMessage;
+      }
       return {
-        Status: "",
+        Status: executionSyncJobs[0].Status,
+        ErrorMessage: errorMessage,
+      };
+    }
+    console.log("SyncJobHistory");
+    console.log(JSON.stringify(syncJobResult["History"]));
+    var dataSourceSyncJob = syncJobResult["History"].sort((a, b) =>
+      a.StartTime > b.StartTime ? -1 : 1
+    )[0];
+    var pendingStatus = [
+      "SYNCING",
+      "INCOMPLETE",
+      "STOPPING",
+      "SYNCING_INDEXING",
+    ];
+    if (!dataSourceSyncJob) {
+      return {
+        Status: "NOTINDEXED",
         ErrorMessage: "",
-        StartTime: "",
+        StartTime: "n/a",
         ExecutionId: "",
       };
     }
-    var errorMessage = "";
-    if (status != "SUCCEEDED") {
-      errorMessage = currentStatus[0].ErrorMessage;
+    if (pendingStatus.includes(dataSourceSyncJob.Status)) {
+      return {
+        Status: "PENDING",
+        ErrorMessage: "",
+        StartTime: dataSourceSyncJob.StartTime,
+        ExecutionId: dataSourceSyncJob.ExecutionId,
+      };
+    } else {
+      return {
+        Status: dataSourceSyncJob.Status,
+        StartTime: dataSourceSyncJob.StartTime,
+        ErrorMessage: "",
+      };
     }
+  } catch (err) {
+    console.log(`error retrieving status ${err}`);
     return {
-      Status: executionSyncJobs[0].Status,
-      ErrorMessage: errorMessage,
-    };
-  }
-  console.log("SyncJobHistory");
-  console.log(JSON.stringify(syncJobResult["History"]));
-  var dataSourceSyncJob = syncJobResult["History"].sort((a, b) =>
-    a.StartTime > b.StartTime ? -1 : 1
-  )[0];
-  var pendingStatus = ["SYNCING", "INCOMPLETE", "STOPPING", "SYNCING_INDEXING"];
-  if (!dataSourceSyncJob) {
-    return {
-      Status: "NOTINDEXED",
-      ErrorMessage: "",
-      StartTime: "n/a",
-      ExecutionId: "",
-    };
-  }
-  if (pendingStatus.includes(dataSourceSyncJob.Status)) {
-    return {
-      Status: "PENDING",
-      ErrorMessage: "",
-      StartTime: dataSourceSyncJob.StartTime,
-      ExecutionId: dataSourceSyncJob.ExecutionId,
-    };
-  } else {
-    return {
-      Status: dataSourceSyncJob.Status,
-      StartTime: dataSourceSyncJob.StartTime,
-      ErrorMessage: "",
+      Status: "Unknown",
+      StartTime: "",
+      ErrorMessage: err,
     };
   }
 }
@@ -349,12 +362,12 @@ async function updateCloudWatchEvent(ruleName, settings) {
   var cloudwatchevents = new AWS.CloudWatchEvents();
   var assignedRules;
   var rule = await cloudwatchevents.describeRule({ Name: ruleName }).promise();
-  var currentState = settings.ENABLE_KENDRA_WEB_CRAWLER
+  var currentState = settings.ENABLE_KENDRA_WEB_INDEXER
     ? "ENABLED"
     : "DISABLED";
   console.log(
-    `RuleName ${ruleName} KENDRA_CRAWLER_SCHEDULE ${
-      settings.KENDRA_CRAWLER_SCHEDULE
+    `RuleName ${ruleName} KENDRA_INDEXER_SCHEDULE ${
+      settings.KENDRA_INDEXER_SCHEDULE
     } settings State ${currentState}`
   );
   console.log(
@@ -365,13 +378,13 @@ async function updateCloudWatchEvent(ruleName, settings) {
   //only allow rate() syntax because that is easy to parse and put guard rails around
   if (
     !(
-      settings.KENDRA_CRAWLER_SCHEDULE.startsWith("rate(") &&
-      settings.KENDRA_CRAWLER_SCHEDULE.endsWith(")")
+      settings.KENDRA_INDEXER_SCHEDULE.startsWith("rate(") &&
+      settings.KENDRA_INDEXER_SCHEDULE.endsWith(")")
     )
   ) {
-    throw "KENDRA_CRAWLER_SCHEDULE must use CloudWatch rate() format -- see https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions";
+    throw "KENDRA_INDEXER_SCHEDULE must use CloudWatch rate() format -- see https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions";
   }
-  var timeParts = settings.KENDRA_CRAWLER_SCHEDULE.replace("rate(", "")
+  var timeParts = settings.KENDRA_INDEXER_SCHEDULE.replace("rate(", "")
     .replace(")", "")
     .split(" ");
   console.log("parts " + JSON.stringify(timeParts));
@@ -380,20 +393,20 @@ async function updateCloudWatchEvent(ruleName, settings) {
   }
   validUnits = ["hour", "hours", "day", "days"];
   if (!validUnits.includes(timeParts[1])) {
-    throw "Kendra Crawler only supports hours and days";
+    throw "Kendra Indexer only supports hours and days";
   }
   if (parseInt(timeParts[0]) != timeParts[0]) {
     throw "Only integer values are supported";
   }
   if (
-    rule.ScheduleExpression != settings.KENDRA_CRAWLER_SCHEDULE ||
+    rule.ScheduleExpression != settings.KENDRA_INDEXER_SCHEDULE ||
     rule.State != currentState
   ) {
     console.log(`Updating rule ${ruleName}`);
     var params = {
       Name: rule.Name,
       Description: rule.Description,
-      ScheduleExpression: settings.KENDRA_CRAWLER_SCHEDULE,
+      ScheduleExpression: settings.KENDRA_INDEXER_SCHEDULE,
       State: currentState,
     };
     var result = await cloudwatchevents.putRule(params).promise();
@@ -407,7 +420,10 @@ exports.handler = async (event, context, callback) => {
 
   try {
     var settings = await get_settings();
-    var kendraIndexId = settings.KENDRA_CRAWLER_INDEX;
+    var kendraIndexId = settings.KENDRA_WEB_PAGE_INDEX;
+    if(!(kendraIndexId && kendraIndexId.length != 0)){
+      throw "settings.KENDRA_WEB_PAGE_INDEX is not specified"
+    }
     if (event["detail-type"] == "Parameter Store Change") {
       await updateCloudWatchEvent(process.env.CLOUDWATCH_RULENAME, settings);
       return;
@@ -442,10 +458,11 @@ exports.handler = async (event, context, callback) => {
       };
     }
 
+    // Run Crawler....
     if (!kendraIndexId) {
-      throw "KENDRA_CRAWLER_INDEX was not specified in settings";
+      throw "KENDRA_WEB_PAGE_INDEX was not specified in settings";
     }
-    var urls = settings.KENDRA_CRAWLER_URLS.split(",");
+    var urls = settings.KENDRA_INDEXER_URLS.split(",");
     await updateCloudWatchEvent(process.env.CLOUDWATCH_RULENAME, settings);
     await indexPages(kendraIndexId, process.env.DATASOURCE_NAME, urls, true);
     return;
@@ -461,6 +478,7 @@ async function indexPages(
   urls,
   forceSync = false
 ) {
+  //1. Start Kendra Crawling
   try {
     var dataSourceResponse = await startKendraSync(
       kendraIndexId,
@@ -468,6 +486,7 @@ async function indexPages(
       forceSync
     );
     var documents = [];
+    //2. For each of the urls specified use Puppeteer to get the  page
     for (url of urls) {
       console.log("Retrieving " + url);
       var page = await getPage(url);
@@ -475,6 +494,7 @@ async function indexPages(
         console.log("Warning: Could not scrape " + url + " skipping....");
         continue;
       }
+      //3. Create the Kendra JSON document
       var document = await createKendraDocument(
         page.Page,
         dataSourceResponse.ExecutionId,
@@ -485,14 +505,14 @@ async function indexPages(
       page.Browser = null;
       page = null;
     }
-
+    //4. Put the documents into the index and end the sync job
     var putResults = await putDocuments(
       kendraIndexId,
       dataSourceResponse.DataSourceId,
       documents
     );
-    if(page && page.Browser){
-        page.Browser.close();
+    if (page && page.Browser) {
+      page.Browser.close();
     }
   } catch (err) {
     console.log(err);

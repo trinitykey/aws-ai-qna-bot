@@ -8,7 +8,8 @@
       v-card-text
         p Current Stats {{status}}
       v-card-actions
-        v-btn( 
+        v-btn(
+          id="btnKendraStartIndex" 
           @click="start"
         ) Start Indexing
       v-card-actions
@@ -53,21 +54,55 @@ module.exports={
   updated:function(){
     console.log("created");
     var self = this;
-    this.getKendraIndexingStatus().then((data) => {
-      self.status = data.Status;
-     } );
+    this.poll( () => {
+      self.getKendraIndexingStatus().then((data) => {
+        self.status = data.Status;
+       })
+      return document.getElementById('btnKendraStartIndex').offsetWidth == 0;
+    },60000,10000 ).catch((error) => console.log("Error trying to retrieve status " + error));
   },
   methods:{
     start:async function(){
+
       this.$store.dispatch('api/startKendraIndexing').catch((err) => console.log(`error while trying to start indexing ` + err ))
+      await new Promise(r => setTimeout(r, 3000));
+      this.getKendraIndexingStatus().then((data) => {
+        this.status = data.Status;
+       })
+
+      
 
     },
     getKendraIndexingStatus: async function(){
       var result = await this.$store.dispatch("api/getKendraIndexingStatus")
-      return result;
+      return result;},
+
+    poll: function(fn, timeout, interval) {
+    var endTime = Number(new Date()) + (timeout || 2000);
+    interval = interval || 100;
+
+    var checkCondition = function(resolve, reject) {
+        // If the condition is met, we're done! 
+        var result = fn();
+        if(result) {
+            resolve(result);
+        }
+        // If the condition isn't met but the timeout hasn't elapsed, go again
+        else if (Number(new Date()) < endTime) {
+            setTimeout(checkCondition, interval, resolve, reject);
+        }
+        // Didn't match and too much time, reject!
+        else {
+            reject(new Error('timed out for ' + fn + ': ' + arguments));
+        }
+    };
+
+    return new Promise(checkCondition);
+}
+
   
   },
-  }
+  
 }
 </script>
 
