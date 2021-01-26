@@ -1,7 +1,7 @@
 <template lang="pug">
   v-dialog(v-model='dialog' persistent max-width='50%')
     template
-      v-btn.block(flat slot="activator") Kendra Web Page Indexer
+      v-btn.block(flat slot="activator" :disabled="!(kendraIndexerEnabled)") Kendra Web Page Indexer
     v-card(id="alexa-modal")
       v-card-title(primary-title)
         .headline Kendra Web Page Indexer
@@ -43,7 +43,8 @@ module.exports={
       status: {},
       dialog: false,
       text:false,
-      ready:false
+      ready:false,
+      kendraIndexerEnabled:false
     }
   },
   components:{
@@ -60,7 +61,16 @@ module.exports={
        })
       return document.getElementById('btnKendraStartIndex').offsetWidth == 0;
     },60000,10000 ).catch((error) => console.log("Error trying to retrieve status " + error));
-  },
+  },    
+  mounted:function(){
+      const self=this
+      setTimeout(async function() {
+        const settings=await self.$store.dispatch('api/listSettings');
+        // console.log(`${JSON.stringify(settings[2],null,2)}`);
+        self.kendraIndexerEnabled = _.get(settings[2],"ENABLE_KENDRA_WEB_INDEXER")=="true" && _.get(settings[2],"KENDRA_INDEXER_URLS") !== "" 
+        && _.get(settings[2],"KENDRA_WEB_PAGE_INDEX") !== "";
+      }, 2000);
+    },
   methods:{
     start:async function(){
 
@@ -69,10 +79,8 @@ module.exports={
       this.getKendraIndexingStatus().then((data) => {
         this.status = data.Status;
        })
-
-      
-
     },
+
     getKendraIndexingStatus: async function(){
       var result = await this.$store.dispatch("api/getKendraIndexingStatus")
       return result;},
