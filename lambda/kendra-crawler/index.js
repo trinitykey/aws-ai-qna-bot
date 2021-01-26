@@ -176,6 +176,9 @@ async function getDataSourceIdFromDataSourceName(
   kendraIndexId,
   dataSourceName
 ) {
+  if(!kendraIndexId){
+    return undefined;
+  }
   var kendra = new AWS.Kendra();
   console.log(
     `Finding datasourceId for ${dataSourceName} for IndexID ${kendraIndexId}`
@@ -421,14 +424,20 @@ exports.handler = async (event, context, callback) => {
   try {
     var settings = await get_settings();
     var kendraIndexId = settings.KENDRA_WEB_PAGE_INDEX;
-    if(!(kendraIndexId && kendraIndexId.length != 0)){
-      throw "settings.KENDRA_WEB_PAGE_INDEX is not specified"
-    }
+
     if (event["detail-type"] == "Parameter Store Change") {
       await updateCloudWatchEvent(process.env.CLOUDWATCH_RULENAME, settings);
       return;
     }
     if (event["path"] == "/crawler/status") {
+      if(!kendraIndexId)
+      {
+        return{
+          statusCode:200,
+          body: JSON.stringify({Status:"INDEX_NOT_SPECIFIED"}),
+          isBase64Encoded: false
+        }
+      }
       var dataSourceId = await getDataSourceIdFromDataSourceName(
         kendraIndexId,
         process.env.DATASOURCE_NAME
