@@ -10,6 +10,7 @@
       v-card-actions
         v-btn(
           id="btnKendraStartIndex" 
+          :disabled="status == 'PENDING' || status=='STARTING'"
           @click="start"
         ) Start Indexing
       v-card-actions
@@ -65,7 +66,7 @@ module.exports={
       this.lastStatusCheck = Date.now();
 
       return document.getElementById('btnKendraStartIndex').offsetWidth == 0;
-    },60000,10000 ).catch((error) => console.log("Error trying to retrieve status " + error));
+    },600000,10000 ).catch((error) => console.log("Error trying to retrieve status " + error));
   },    
   mounted:function(){
       const self=this
@@ -80,9 +81,10 @@ module.exports={
     start:async function(){
 
       this.$store.dispatch('api/startKendraIndexing').catch((err) => console.log(`error while trying to start indexing ` + err ))
+      this.status = "STARTING"
       await new Promise(r => setTimeout(r, 3000));
-      self.getKendraIndexingStatus().then((data) => {
-          self.status = data.Status;
+      this.getKendraIndexingStatus().then((data) => {
+          this.status = data.Status;
         })
       this.$forceUpdate();
     },
@@ -102,7 +104,7 @@ module.exports={
             resolve(result);
         }
         // If the condition isn't met but the timeout hasn't elapsed, go again
-        else if (Number(new Date()) < endTime) {
+        else if (true) /*Number(new Date()) < endTime) */{
             setTimeout(checkCondition, interval, resolve, reject);
         }
         // Didn't match and too much time, reject!
