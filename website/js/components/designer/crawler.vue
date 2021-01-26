@@ -44,7 +44,8 @@ module.exports={
       dialog: false,
       text:false,
       ready:false,
-      kendraIndexerEnabled:false
+      kendraIndexerEnabled:false,
+      lastStatusCheck: undefined
     }
   },
   components:{
@@ -54,11 +55,15 @@ module.exports={
   },
   updated:function(){
     console.log("created");
-    var self = this;
+    var self = this;;
     this.poll( () => {
-      self.getKendraIndexingStatus().then((data) => {
-        self.status = data.Status;
-       })
+      if(!this.lastStatusCheck || Date.now() - this.lastStatusCheck > 9000){
+        self.getKendraIndexingStatus().then((data) => {
+          self.status = data.Status;
+        })
+       }
+      this.lastStatusCheck = Date.now();
+
       return document.getElementById('btnKendraStartIndex').offsetWidth == 0;
     },60000,10000 ).catch((error) => console.log("Error trying to retrieve status " + error));
   },    
@@ -76,9 +81,10 @@ module.exports={
 
       this.$store.dispatch('api/startKendraIndexing').catch((err) => console.log(`error while trying to start indexing ` + err ))
       await new Promise(r => setTimeout(r, 3000));
-      this.getKendraIndexingStatus().then((data) => {
-        this.status = data.Status;
-       })
+      self.getKendraIndexingStatus().then((data) => {
+          self.status = data.Status;
+        })
+      this.$forceUpdate();
     },
 
     getKendraIndexingStatus: async function(){
