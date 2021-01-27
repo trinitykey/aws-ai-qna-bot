@@ -135,12 +135,17 @@ async function getPage(url) {
 
 async function createKendraDocument(page, jobExecutionId, dataSourceId) {
   var url = await page.url();
+  var pageText = await page.content();
+  console.log("Creating document for....")
+  console.log(url);
+  console.log(pageText)
+
   doc = {
     Id: crypto
       .createHash("sha1")
       .update(url)
       .digest("base64"),
-    Blob: await page.$eval("*", (el) => el.innerText),
+    Blob: pageText,
     Title: await page.title(),
     Attributes: [
       {
