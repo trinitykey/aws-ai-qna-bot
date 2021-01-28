@@ -9,7 +9,7 @@ exports.handler =  async function(event, context) {
         var translate = new AWS.Translate();
 
         console.log(event["file"]);
-        var csvFile = Buffer.from(event["file"], 'base64').toString("ascii");
+        var csvFile = Buffer.from(event["file"], 'ascii');
         var response = await translate.importTerminology({
                 "Name":event["name"],
                 "MergeStrategy":'OVERWRITE',

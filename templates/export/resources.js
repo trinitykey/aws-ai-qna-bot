@@ -748,10 +748,20 @@ module.exports = Object.assign({
               "kendra:StartDataSourceSyncJob",
               "kendra:StopDataSourceSyncJob",
               "kendra:UpdateDataSource",
-              "ssm:GetParameter",
             ],
             Resource: ["*"],
           },
+          {
+            Effect: "Allow",
+            Action: [
+              "ssm:GetParameter",
+            ],
+            Resource: [
+              {"Fn::Join": ["",["arn:aws:ssm:",{"Ref":"AWS::Region"},":",{"Ref":"AWS::AccountId"},":parameter/",{"Ref":"CustomQnABotSettings"}]]},
+              {"Fn::Join": ["",["arn:aws:ssm:",{"Ref":"AWS::Region"},":",{"Ref":"AWS::AccountId"},":parameter/",{"Ref":"DefaultQnABotSettings"}]]},
+          ],
+          },
+
           {
             Effect: "Allow",
             Action: ["events:DescribeRule", "events:PutRule"],
