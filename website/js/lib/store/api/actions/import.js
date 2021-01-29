@@ -115,6 +115,17 @@ module.exports={
             method:'delete'
         })
     },
+    startImportTranslate(context,opts){
+        return context.dispatch('_request',{
+            url:context.rootState.info._links.translate.href,
+            method:'post',
+            body: 
+            {"name":opts.name,
+             "description":opts.description,
+             "file": opts.file
+            }
+        })
+    },
 }
 
 
