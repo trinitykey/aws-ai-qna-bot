@@ -26,6 +26,8 @@ async function run_query_es(params, qid) {
 }
 
 
+
+
 /**
  * Function to query kendraClient and return results via Promise
  * @param kendraClient
