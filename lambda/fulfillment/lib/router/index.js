@@ -13,7 +13,7 @@ module.exports=class router {
             console.log("final:",JSON.stringify(res,null,2))
             callback(null,res)
         }catch(e){
-            console.log("error",e)
+            console.log("throwing response:",JSON.stringify(e))
             if(e.action==='END'){
                 callback(null)
             }else if(e.action==="RESPOND"){
@@ -28,7 +28,7 @@ module.exports=class router {
         console.log(JSON.stringify({req,res},null,2))
 
         if(this.middleware[index]){
-            console.log(`middleware=${this.middleware[index].name} request ${JSON.stringify(req)} response ${JSON.stringify(res)}`)
+            console.log(`middleware=${this.middleware[index].name}`)
             var result=await this.middleware[index](req,res)
             return await this._walk(result.req,result.res,++index)
         }else{

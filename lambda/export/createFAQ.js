@@ -78,6 +78,7 @@ function faqDeleter(kendraClient,params) {
             }
             else {
                 console.log('Deleted old FAQ successfully. New list of FAQs in index ' + params.IndexId + ':');
+                console.log("Delete parameters " + JSON.stringify(params));   
                 //describeFaq should cause an exception when the faq has been deleted.
                 poll(() => kendraClient.describeFaq(params).promise(),(result) => {return {Status:"PENDING"}},5000 ).then(() => resolve(data));        // successful response
                 

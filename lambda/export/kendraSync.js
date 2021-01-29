@@ -51,6 +51,7 @@ async function get_parameter(param_name) {
     var ssm = new aws.SSM();
     var params = {
         Name: param_name,
+        WithDecryption: true
     };
     // TODO: update permissions
     var response = await ssm.getParameter(params).promise();
@@ -107,6 +108,7 @@ exports.performSync=async function(event,context,cb){
         var Bucket=event.Records[0].s3.bucket.name
         var Key=decodeURI(event.Records[0].s3.object.key)
         var VersionId=_.get(event,"Records[0].s3.object.versionId")
+        console.log(Bucket,Key)
         
         // triggered by export file, waits to be uploaded
         await s3.waitFor('objectExists',{Bucket,Key,VersionId}).promise()
