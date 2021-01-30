@@ -106,10 +106,10 @@ exports.translate_hit = async function(hit,usrLang,req){
     if (r) {
         try {
             if (r.subTitle && r.subTitle.length > 0  && _.get(hit,'autotranslate.r.subTitle')) {
-                hit_out.r.subTitle = await get_translation(hit_out.r.subTitle, usrLang) ;
+                hit_out.r.subTitle = await get_translation(hit_out.r.subTitle, usrLang,req) ;
             }
             if (r.title && r.title.length > 0 && _.get(hit,'autotranslate.r.title')) {
-                hit_out.r.title = await get_translation(hit_out.r.title, usrLang) ;
+                hit_out.r.title = await get_translation(hit_out.r.title, usrLang,req) ;
             }
             if (r.text && r.text.length > 0) {
                 // no op
@@ -123,10 +123,10 @@ exports.translate_hit = async function(hit,usrLang,req){
             if (r.buttons && r.buttons.length > 0) {
                 for (let x=0; x<r.buttons.length; x++) {
                     if (_.get(hit,'autotranslate.r.buttons[x].text')) {
-                        hit_out.r.buttons[x].text = await get_translation(hit_out.r.buttons[x].text, usrLang) ;
+                        hit_out.r.buttons[x].text = await get_translation(hit_out.r.buttons[x].text, usrLang,req) ;
                     }
                     if (_.get(hit,'autotranslate.r.buttons[x].value')) {
-                        hit_out.r.buttons[x].value = await get_translation(hit_out.r.buttons[x].value, usrLang) ;
+                        hit_out.r.buttons[x].value = await get_translation(hit_out.r.buttons[x].value, usrLang,req) ;
                     }                    
                 }
             }

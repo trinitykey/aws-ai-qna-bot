@@ -54,7 +54,7 @@ async function get_terminologies(sourceLang,allowedList =[]){
 async function get_translation(inputText, sourceLang, targetLang,req ) {
     var customTerminologyEnabled = _.get(req._settings,"ENABLE_CUSTOM_TERMINOLOGY") == true;
     var customTerminologies = _.get(req._settings,"CUSTOM_TERMINOLOGY_SOURCES","").split(",");
-    console.log("get translation request " + JSON.stringify(req))
+    console.log("get translation request " + JSON.stringify(inputText))
     const params = {
         SourceLanguageCode: sourceLang, /* required */
         TargetLanguageCode: targetLang, /* required */
@@ -63,9 +63,7 @@ async function get_translation(inputText, sourceLang, targetLang,req ) {
     console.log("get_translation:", targetLang, "InputText: ", inputText);
     if (targetLang === sourceLang) {
         console.log("get_translation: source and target are the same, translation not required.");
-        const res = {};
-        res.TranslatedText = inputText;
-        return res;
+        return inputText;
     }
     if(customTerminologyEnabled){
         customTerminologies = await get_terminologies(sourceLang,customTerminologies)
