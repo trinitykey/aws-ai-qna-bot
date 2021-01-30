@@ -39,17 +39,17 @@ function dispatch(event,context,cb){
         */
         if (_.has(event,"OldResourceProperties.clarificationPrompt.messages[0].content")) {
             let v = _.get(event, "OldResourceProperties.clarificationPrompt.messages[0].content", "");
-            if (v.includes("Iâm")) {
+            if (v.includes("I’m")) {
                 console.log('found bad apostrophe and replacing');
-                v = v.replace("Iâm", "I'm");
+                v = v.replace("I’m", "I'm");
                 _.set(event, "OldResourceProperties.clarificationPrompt.messages[0].content", v);
             }
         }
         if (_.has(event,"OldResourceProperties.rejectionStatement.messages[0].content")) {
             let v =_.get(event, "OldResourceProperties.rejectionStatement.messages[0].content", "");
-            if (v.includes("Iâm")) {
+            if (v.includes("I’m")) {
                 console.log('found bad apostrophe and replacing');
-                v = v.replace("Iâm","I'm");
+                v = v.replace("I’m","I'm");
                 _.set(event, "OldResourceProperties.rejectionStatement.messages[0].content", v);
             }
         }

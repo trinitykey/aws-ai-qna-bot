@@ -319,6 +319,7 @@ async function evaluateConditionalChaining(req, res, hit, conditionalChaining) {
 module.exports = async function (req, res) {
     let redactEnabled = _.get(req, '_settings.ENABLE_REDACTING');
     let redactRegex = _.get(req, '_settings.REDACTING_REGEX', "\\b\\d{4}\\b(?![-])|\\b\\d{9}\\b|\\b\\d{3}-\\d{2}-\\d{4}\\b");
+    let cloudWatchLoggingDisabled = _.get(req, '_settings.DISABLE_CLOUDWATCH_LOGGING');
 
     if (redactEnabled) {
         process.env.QNAREDACT= "true";
@@ -326,6 +327,11 @@ module.exports = async function (req, res) {
     } else {
         process.env.QNAREDACT="false";
         process.env.REDACTING_REGEX="";
+    }
+    if (cloudWatchLoggingDisabled) {
+        process.env.CLOUDWATCHLOGGINGDISABLED="true";
+    } else {
+        process.env.CLOUDWATCHLOGGINGDISABLED="false";
     }
     const elicitResponseChainingConfig = _.get(res, "session.qnabotcontext.elicitResponse.chainingConfig", undefined);
     const elicitResponseProgress = _.get(res, "session.qnabotcontext.elicitResponse.progress", undefined);
@@ -379,7 +385,8 @@ module.exports = async function (req, res) {
                 alt: {
                     markdown: "*[" + msg + "]*  \n",
                     ssml: "<speak>" + msg + "</speak>"
-                }
+                },
+                rp: "[" + _.get(hit, "rp") + "] "
             };
             hit = merge_next(debug_msg, hit) ;
         };
@@ -408,6 +415,18 @@ module.exports = async function (req, res) {
         tmp.altMessages=_.get(res, "result.alt", {});
         _.set(res, "session.appContext",tmp)
 
+        // Add reprompt 
+        var rp = _.get(res, "result.rp");
+        if (rp) {
+            var type = 'PlainText'
+            
+            if (rp.includes("<speak>")) {
+                type = 'SSML'
+                rp = rp.replace(/\r?\n|\r/g, ' ')
+            }
+            _.set(res, "reprompt",{type, text : rp })
+        }
+
         if (req._preferredResponseType == "SSML") {
             if (_.get(res, "result.alt.ssml")) {
                 res.type = "SSML"
@@ -427,7 +446,6 @@ module.exports = async function (req, res) {
             res.card.imageUrl = _.get(card, 'imageUrl')
             res.card.buttons = _.get(card, 'buttons')
         }
-
 
         var navigationJson = _.get(res, "session.qnabotcontext.navigation", false)
         var previousQid = _.get(res, "session.qnabotcontext.previous.qid", false)

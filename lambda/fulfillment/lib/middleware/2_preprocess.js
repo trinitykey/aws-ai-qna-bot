@@ -7,7 +7,7 @@ var AWS=require('aws-sdk');
 async function get_userInfo(userId, idattrs) {
     var default_userInfo = {
         UserId:userId,
-        InteractionCount:0
+        InteractionCount:1
     };
     var usersTable = process.env.DYNAMODB_USERSTABLE;
     var docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
@@ -41,6 +41,9 @@ async function get_userInfo(userId, idattrs) {
     }
     if (_.get(idattrs,'verifiedIdentity')) {
         _.set(req_userInfo, 'isVerifiedIdentity', _.get(idattrs,'verifiedIdentity'));
+    }
+    if (_.get(idattrs, 'profile')) {
+        _.set(req_userInfo, 'Profile', _.get(idattrs, 'profile'));
     }
     // append time since last seen
     var now = new Date();

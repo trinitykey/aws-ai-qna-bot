@@ -31,6 +31,7 @@ var default_settings = {
     ERRORMESSAGE: "Unfortunately I encountered an error when searching for your answer. Please ask me again later.",
     EMPTYMESSAGE: "You stumped me! Sadly I don't know how to answer your question.",
     DEFAULT_ALEXA_LAUNCH_MESSAGE: "Hello, Please ask a question",
+    DEFAULT_ALEXA_REPROMPT: "Please either answer the question, ask another question or say Goodbye to end the conversation.",
     DEFAULT_ALEXA_STOP_MESSAGE: "Goodbye",
     SMS_HINT_REMINDER_ENABLE: "true",
     SMS_HINT_REMINDER: " (Feedback? Reply THUMBS UP or THUMBS DOWN. Ask HELP ME at any time)",
@@ -51,7 +52,12 @@ var default_settings = {
     PII_REJECTION_QUESTION: "pii_rejection_question", // If PII is found, the user's request (question) will change to this phrase
     PII_REJECTION_WITH_COMPREHEND: true, //When set to true, Comprehend will be used for PII detection in addition to matching  based on the PII_REJECTION_REGE
     PII_REJECTION_REGEX: "\\b\\d{4}\\b(?![-])|\\b\\d{9}\\b|\\b\\d{3}-\\d{2}-\\d{4}\\b", //Regex to use to find PII.,
-    PII_REJECTION_IGNORE_TYPES: "Name,Address" //See https://aws.amazon.com/blogs/machine-learning/detecting-and-redacting-pii-using-amazon-comprehend/ for valid types
+    PII_REJECTION_IGNORE_TYPES: "Name,Address", //See https://aws.amazon.com/blogs/machine-learning/detecting-and-redacting-pii-using-amazon-comprehend/ for valid types
+    DISABLE_CLOUDWATCH_LOGGING: "false", // disable all logging in fulfillment es query handler lambda. does not disable logging from Lambda Hooks or Conditional Chaining Lambda functions
+    MINIMAL_ES_LOGGING: "false", // do not log utterances or session attributes to elasticsearch for kibana logging
+    S3_PUT_REQUEST_ENCRYPTION: "", // enable header x-amz-server-side-encryption header and set with this value
+    BOT_ROUTER_WELCOME_BACK_MSG: "Welcome back to QnABot.", // The text used by QnABot when ending communication from a specialty bot
+    BOT_ROUTER_EXIT_MSGS: "exit,quit,goodbye,leave" // The exit phrases in comma separated list available for the a user to end communication with a specialty bot
 }
 
 module.exports = {
