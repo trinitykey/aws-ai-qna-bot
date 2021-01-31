@@ -19,6 +19,8 @@
                 v-on:change="Getfile"
                 ref="file"
               )
+            <br/>
+            p {{uploadStatus}}
       v-flex(v-if="jobs.length>0")
         v-card(id="import-jobs")
           v-card-title.headline Installed Terminologies
@@ -77,7 +79,8 @@ module.exports={
       success:'',
       description:null,
       jobs:[],
-      examples:[]
+      examples:[],
+      uploadStatus:""
     }
   },
   components:{
@@ -90,53 +93,12 @@ module.exports={
     this.examples=examples
   },
   methods:{
-    importExample:function(url){
-      this.url=url
-      this.Geturl()
-    },
+
     close:function(){
       this.loading=false
       this.error=false
     },
-    deleteJob:function(index){
-      var self=this
-      console.log(this.jobs,index)
-      var job=this.jobs[index]
-      job.loading=true
-      this.$store.dispatch('api/deleteImport',job)
-      .then(()=>{
-        self.jobs.splice(index,1)
-      })
-      .catch(()=>{
-        job.loading=false
-      })
-    },
-    addJob:function(jobId){
-      var self=this
-      if(typeof jobId === "object"){
-        var job=jobId
-      }else{
-        var job={
-          href:`${this.$store.state.info._links.jobs.href}/imports/${jobId}`,
-          id:jobId,
-          progess:0,
-          status:"Submitted"
-        }
-      }
-      self.jobs.splice(0,0,job)
-      self.$store.dispatch("api/waitForImport",{id:jobId.id || jobId})
-      .then(()=>poll())
-      
-      function poll(){
-        self.$store.dispatch('api/getImport',job)
-        .then(function(result){
-          Object.assign(job,result) 
-          if(result.status==="InProgress"){
-            setTimeout(()=>poll(),100)
-          }
-        })
-      }
-    },
+
     refresh:function(index){
       var self=this
       if(index===undefined){
@@ -198,8 +160,9 @@ module.exports={
           rej('Invalid or Empty File')
         }
       })
-      .then(()=>{
-        self.addJob(id)
+      .then((data)=>{
+        self.uploadStatus = `Status: ${data.Status} ${data.Error ? data.Error : ""}`
+        self.refresh();
       })
       .tapCatch(console.log)
       .catch(error=>self.error=error)

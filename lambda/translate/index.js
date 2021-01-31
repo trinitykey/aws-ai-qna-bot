@@ -61,7 +61,7 @@ exports.handler = async function(event, context) {
     console.log(e);
     return {
       statusCode: 200,
-      message: {Status:"Failed",Error:e},
+      body: {Status:"Failed",Error:e},
       headers: {},
       isBase64Encoded: false,
     };
