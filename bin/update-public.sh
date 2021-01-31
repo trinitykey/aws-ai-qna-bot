@@ -28,4 +28,4 @@ fi
 
 echo https://$PUBLICBUCKET.s3.$REGION.amazonaws.com/$PUBLICPREFIX/templates/master.json
 echo https://$PUBLICBUCKET.s3.$REGION.amazonaws.com/$PUBLICPREFIX/templates/public.json
-echo https://$PUBLICBUCKET.s3.$REGION.amazonaws.com/$PUBLICPREFIX/templates/public-vpc-support.json
+#echo https://$PUBLICBUCKET.s3.$REGION.amazonaws.com/$PUBLICPREFIX/templates/public-vpc-support.json

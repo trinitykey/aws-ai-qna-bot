@@ -172,11 +172,19 @@ module.exports = Object.assign({
       Principal: "apigateway.amazonaws.com",
     },
   },
-  TranslateApiResource: {
+  TranslateApiRootResource: {
     Type: "AWS::ApiGateway::Resource",
     Properties: {
       ParentId: { Ref: "ApiRootResourceId" },
       PathPart: "translate",
+      RestApiId: { Ref: "Api" },
+    },
+  },
+  TranslateApiResource: {
+    Type: "AWS::ApiGateway::Resource",
+    Properties: {
+      ParentId: { Ref: "TranslateApiRootResource" },
+      PathPart: "{proxy+}",
       RestApiId: { Ref: "Api" },
     },
   },
@@ -378,6 +386,7 @@ module.exports = Object.assign({
       "InvokePermissionConnectLambda",
       "TranslatePost",
       "TranslateApiResource",
+      "TranslateApiRootResource",
       "KendraCrawlerPost",
       "KendraCrawlerApiResource",
       "KendraCrawlerStatusRootApiResource",
@@ -518,7 +527,7 @@ module.exports = Object.assign({
       RestApiId: { Ref: "Api" },
       ResourceId: { Ref: "TranslateApiResource" },
       Integration: {
-        Type: "AWS",
+        Type: "AWS_PROXY",
         IntegrationHttpMethod: "POST",
         RequestTemplates: {
           "application/x-www-form-urlencoded": "{\"body\":$input.json('$')}",

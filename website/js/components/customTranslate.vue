@@ -21,19 +21,26 @@
               )
       v-flex(v-if="jobs.length>0")
         v-card(id="import-jobs")
-          v-card-title.headline Import Jobs
+          v-card-title.headline Installed Terminologies
           v-card-text
-            v-list
-              template(v-for="(job,index) in jobs")
-                v-list-tile(:id="'import-job-'+job.id" :data-status="job.status")
-                  v-list-tile-content.job-content
-                    v-list-tile-title {{job.id}}: {{job.status}}
-                    v-list-tile-sub-title
-                      v-progress-linear(v-model="job.progress*100")
-                  v-list-tile-action.job-actions
-                    v-btn(fab block icon @click="deleteJob(index)" :loading="job.loading") 
-                      v-icon delete
-                v-divider(v-if="index + 1 < jobs.length")
+              table.table
+                tr
+                  th(style="text-align:left") Name
+                  th(style="text-align:left") Description
+                  th(style="text-align:left") Source Language
+                  th(style="text-align:left") Target Languages
+                  th(style="text-align:left") Number Of Terms
+
+                template(v-for="(job,index) in jobs")
+                    tr
+                      td {{job.Name}}
+                      td {{job.Description}}
+                      td {{job.SourceLanguage}}
+                      td {{job.TargetLanguageCodes.join()}}
+                      td {{job.TermCount}}
+
+
+
 </template>
 
 <script>
@@ -134,12 +141,11 @@ module.exports={
       var self=this
       if(index===undefined){
         self.jobs=[]
-        return this.$store.dispatch('api/listImports')
+        return this.$store.dispatch('api/getTerminologies')
         .then(result=>{
-          result.jobs.forEach((job,index)=>{
-            return self.addJob(job)
-          })
+          self.jobs = result
         })
+        
       }
     },
     Getfile:function(event){
