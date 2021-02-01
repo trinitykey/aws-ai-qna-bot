@@ -457,7 +457,11 @@ async function routeKendraRequest(event, context) {
                 );
                 var pattern = new RegExp("[^.]* " + highlight + "[^.]*.[^.]*.");
                 pattern.lastIndex = 0; // must reset this property of regex object for searches
+                //TODO: FIX THIS
+                try
+                {
                 speechMessage = pattern.exec(speechMessage)[0];
+                } catch{}
               }
             }
           }
