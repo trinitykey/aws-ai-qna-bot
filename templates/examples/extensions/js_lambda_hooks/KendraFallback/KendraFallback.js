@@ -1,4 +1,5 @@
 var _ = require('lodash');
+var translate = require("./translate");
 var linkify = require('linkifyjs');
 
 /**
@@ -409,10 +410,13 @@ async function routeKendraRequest(event, context) {
     });
 
     // update QnABot answer content for ssml, markdown, and text
+    let ssmlMessage = ""
     if (foundAnswerCount > 0 || foundDocumentCount > 0) {
         event.res.session.qnabot_gotanswer = true ; 
         event.res.message = answerMessage;
-        let ssmlMessage = `${answerMessage.substring(0,600).replace(/\r?\n|\r/g, " ")}`;
+        event.res.card = [];
+
+        ssmlMessage = `${answerMessage.substring(0,600).replace(/\r?\n|\r/g, " ")}`;
         if (speechMessage != "") {
             ssmlMessage = `${speechMessage.substring(0,600).replace(/\r?\n|\r/g, " ")}`;
         }
@@ -463,6 +467,32 @@ async function routeKendraRequest(event, context) {
             }
         });
     }
+
+
+      // translate response
+    var usrLang = "en";
+    if (_.get(event.req._settings, "ENABLE_MULTI_LANGUAGE_SUPPORT")) {
+        console.log("Translating response....")
+        usrLang = _.get(event.req, "session.userDetectedLocale");
+      if (usrLang != "en") {
+        console.log("Autotranslate hit to usrLang: ", usrLang);
+        var hit = {
+            a:answerMessage,
+            markdown: event.res.session.appContext.altMessages.markdown,
+            ssml: ssmlMessage
+        }
+        var translated_hit= await translate.translate_hit(hit, usrLang, event.req);
+        event.res.session.appContext.altMessages.markdown = translated_hit.markdown;
+        event.res.session.appContext.altMessages.ssml = translated_hit.ssml;
+        event.res.plainMessage = translated_hit.a;
+        event.res.message = translated_hit.markdown;
+
+      } else {
+        console.log("User Lang is en, Autotranslate not required.");
+      }
+    }
+    
+    
     _.set(event,"res.answerSource",'KENDRA');
     if (kendraQueryId) {
         _.set(event,"res.session.qnabotcontext.kendra.kendraQueryId",kendraQueryId) ;
