@@ -145,7 +145,7 @@ module.exports = Object.assign({
       Handler: "index.handler",
       MemorySize: "2048",
       Role: { "Fn::GetAtt": ["KendraCrawlerRole", "Arn"] },
-      Runtime: "nodejs10.x",
+      Runtime: "nodejs12.x",
       Timeout: 900,
       Tags: [
         {

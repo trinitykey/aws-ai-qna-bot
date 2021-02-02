@@ -2,8 +2,10 @@ const chromium = require("chrome-aws-lambda");
 const AWS = require("aws-sdk");
 const crypto = require("crypto");
 const _ = require("lodash");
-const { settings } = require("cluster");
 const sleep = require("util").promisify(setTimeout);
+const https = require("https");
+const pdfreader = require("pdfreader");
+
 
 AWS.config.update({ region: "us-east-1" });
 
@@ -23,15 +25,20 @@ function isJson(str) {
 
 async function retry(count, func) {
   var retryCount = 0;
+  var error = {}
   while (retryCount < count) {
     try {
       return await func();
     } catch (err) {
+      error = err;
       console.log(`retrying error:` + JSON.stringify(err));
       retryCount++;
       await sleep(3000);
+
     }
   }
+  throw error;
+
 }
 
 function str2bool(settings) {
@@ -136,9 +143,8 @@ async function getPage(url) {
 async function createKendraDocument(page, jobExecutionId, dataSourceId) {
   var url = await page.url();
   var pageText = await page.content();
-  console.log("Creating document for....")
+  console.log("Creating document for....");
   console.log(url);
-  console.log(pageText)
 
   doc = {
     Id: crypto
@@ -146,6 +152,7 @@ async function createKendraDocument(page, jobExecutionId, dataSourceId) {
       .update(url)
       .digest("base64"),
     Blob: pageText,
+    ContentType:"HTML",
     Title: await page.title(),
     Attributes: [
       {
@@ -178,20 +185,80 @@ async function createKendraDocument(page, jobExecutionId, dataSourceId) {
 }
 
 
-async function createKendraDocumentFromPDF(url, jobExecutionId, dataSourceId) {
-  var url = await page.url();
-  var pageText = await page.content();
-  console.log("Creating document for....")
-  console.log(url);
-  console.log(pageText)
 
+
+async function bufferize(url) {
+  var hn = url.substring(url.search("//") + 2);
+  hn = hn.substring(0, hn.search("/"));
+  var pt = url.substring(url.search("//") + 2);
+  pt = pt.substring(pt.search("/"));
+  const options = { hostname: hn, port: 443, path: pt, method: "GET" };
+  return new Promise(function (resolve, reject) {
+    var buff = new Buffer.alloc(0);
+    const req = https.request(options, (res) => {
+      res.on("data", (d) => {
+        buff = Buffer.concat([buff, d]);
+      });
+      res.on("end", () => {
+        resolve(buff);
+      });
+    });
+    req.on("error", (e) => {
+      console.error("https request error: " + e);
+    });
+    req.end();
+  });
+}
+
+async function readlines(buffer, xwidth) {
+  return new Promise((resolve, reject) => {
+    var pdftxt = new Array();
+    var pg = 0;
+    new pdfreader.PdfReader().parseBuffer(buffer, function (err, item) {
+      if (err) console.log("pdf reader error: " + err);
+      else if (!item) {
+        pdftxt.forEach(function (a, idx) {
+          pdftxt[idx].forEach(function (v, i) {
+            pdftxt[idx][i].splice(1, 2);
+          });
+        });
+        resolve(pdftxt);
+      } else if (item && item.page) {
+        pg = item.page - 1;
+        pdftxt[pg] = [];
+      } else if (item.text) {
+        var t = 0;
+        var sp = "";
+        pdftxt[pg].forEach(function (val, idx) {
+          if (val[1] == item.y) {
+            if (xwidth && item.x - val[2] > xwidth) {
+              sp += " ";
+            } else {
+              sp = "";
+            }
+            pdftxt[pg][idx][0] += sp + item.text;
+            t = 1;
+          }
+        });
+        if (t == 0) {
+          pdftxt[pg].push([item.text, item.y, item.x]);
+        }
+      }
+    });
+  });
+}
+async function createKendraDocumentFromPDF(url, jobExecutionId, dataSourceId) {
+  var pageText = await  getTextFromPDF(url);
+  console.log("Creating document for " + url);
+  console.log(pageText)
   doc = {
     Id: crypto
       .createHash("sha1")
       .update(url)
       .digest("base64"),
     Blob: pageText,
-    Title: await page.title(),
+    ContentType:"PLAIN_TEXT",
+    Title: url.split("/").slice(-1)[0],
     Attributes: [
       {
         Key: "_data_source_id",
@@ -220,13 +287,22 @@ async function createKendraDocumentFromPDF(url, jobExecutionId, dataSourceId) {
     ],
   };
   return doc;
+}
+
+async function getTextFromPDF(url){
+  var pdfBuffer = await bufferize(url)
+  var pdfParagraphs = await readlines(pdfBuffer)
+  console.log(JSON.stringify(pdfParagraphs))
+  var allLines = pdfParagraphs.flat(5)
+  return allLines.join("\n")
+
 }
 
 async function getDataSourceIdFromDataSourceName(
   kendraIndexId,
   dataSourceName
 ) {
-  if(!kendraIndexId){
+  if (!kendraIndexId) {
     return undefined;
   }
   var kendra = new AWS.Kendra();
@@ -310,7 +386,12 @@ async function stopSyncJob(kendraIndexId, dataSourceName) {
 async function putDocuments(kendraIndexId, dataSourceId, documents) {
   try {
     var kendra = new AWS.Kendra();
-
+    console.log("documents => " + JSON.stringify(documents.map(d => {
+      return {
+        DocumentID: d.Id,
+        Title: d.Title
+      }
+    })))
     for (var i = 0; i < documents.length; i += 10) {
       //batchPutDocuments can't handle more than 10 documents
       var end = documents.length ? i + 10 : documents.length - 1;
@@ -480,13 +561,12 @@ exports.handler = async (event, context, callback) => {
       return;
     }
     if (event["path"] == "/crawler/status") {
-      if(!kendraIndexId)
-      {
-        return{
-          statusCode:200,
-          body: JSON.stringify({Status:"INDEX_NOT_SPECIFIED"}),
-          isBase64Encoded: false
-        }
+      if (!kendraIndexId) {
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ Status: "INDEX_NOT_SPECIFIED" }),
+          isBase64Encoded: false,
+        };
       }
       var dataSourceId = await getDataSourceIdFromDataSourceName(
         kendraIndexId,
@@ -548,21 +628,38 @@ async function indexPages(
     //2. For each of the urls specified use Puppeteer to get the  page
     for (url of urls) {
       console.log("Retrieving " + url);
-      var page = await getPage(url);
-      if (page == null) {
-        console.log("Warning: Could not scrape " + url + " skipping....");
-        continue;
+      if (
+        url
+          .split(".")
+          .slice(-1)[0]
+          .toLowerCase() != "pdf"
+      ) {
+        var page = await getPage(url);
+        if (page == null) {
+          console.log("Warning: Could not scrape " + url + " skipping....");
+          continue;
+        }
+
+        //3. Create the Kendra JSON document
+        var document = await createKendraDocument(
+          page.Page,
+          dataSourceResponse.ExecutionId,
+          dataSourceResponse.DataSourceId
+        );
+      } else {
+        console.log("Indexing PDF " + url);
+        var document = await createKendraDocumentFromPDF(
+          url,
+          dataSourceResponse.ExecutionId,
+          dataSourceResponse.DataSourceId
+        );
       }
-      //3. Create the Kendra JSON document
-      var document = await createKendraDocument(
-        page.Page,
-        dataSourceResponse.ExecutionId,
-        dataSourceResponse.DataSourceId
-      );
       documents.push(document);
-      page.Browser.close();
-      page.Browser = null;
-      page = null;
+      if (page) {
+        page.Browser.close();
+        page.Browser = null;
+        page = null;
+      }
     }
     //4. Put the documents into the index and end the sync job
     var putResults = await putDocuments(
@@ -570,6 +667,8 @@ async function indexPages(
       dataSourceResponse.DataSourceId,
       documents
     );
+
+    console.log("Put document results - " + JSON.stringify(putResults))
     if (page && page.Browser) {
       page.Browser.close();
     }
@@ -579,10 +678,19 @@ async function indexPages(
   }
 }
 
-// ;(async function main () {
 
-//      process.env.DEFAULT_SETTINGS_PARAM = "CFN-DefaultQnABotSettings-JQRrDQLejA6E";
-//      process.env.CUSTOM_SETTINGS_PARAM = "CFN-CustomQnABotSettings-oZwgxFj59Cvt";
-//      process.env.DATASOURCE_NAME = "qnaBotKendraCrawler"
 
-//   })()
+// (async function main() {
+//   process.env.DEFAULT_SETTINGS_PARAM = "CFN-DefaultQnABotSettings-JQRrDQLejA6E";
+//   process.env.CUSTOM_SETTINGS_PARAM = "CFN-CustomQnABotSettings-oZwgxFj59Cvt";
+//   process.env.DATASOURCE_NAME = "qnaBotKendraCrawler";
+
+//   var results = getTextFromPDF("https://dlt.ri.gov/emergencyui/covidupdates122720.pdf");
+
+//   result = await bufferize("https://dlt.ri.gov/emergencyui/WorkShare%20FAQs%2012.11.20.pdf")
+//   var lines = await readlines(result)
+//   var allLines = lines.flat(5)
+//   var allText = lines.join("\r\n")
+//   console.log(allText)
+
+// })();
