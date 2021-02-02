@@ -161,7 +161,7 @@ module.exports={
         }
       })
       .then((data)=>{
-        self.uploadStatus = `Status: ${data.Status} ${data.Error ? data.Error : ""}`
+        self.uploadStatus = `Status: ${data.Status}:${data.Error}`
         self.refresh();
       })
       .tapCatch(console.log)

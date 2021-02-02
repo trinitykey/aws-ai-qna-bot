@@ -177,6 +177,51 @@ async function createKendraDocument(page, jobExecutionId, dataSourceId) {
   return doc;
 }
 
+
+async function createKendraDocumentFromPDF(url, jobExecutionId, dataSourceId) {
+  var url = await page.url();
+  var pageText = await page.content();
+  console.log("Creating document for....")
+  console.log(url);
+  console.log(pageText)
+
+  doc = {
+    Id: crypto
+      .createHash("sha1")
+      .update(url)
+      .digest("base64"),
+    Blob: pageText,
+    Title: await page.title(),
+    Attributes: [
+      {
+        Key: "_data_source_id",
+        Value: {
+          StringValue: dataSourceId,
+        },
+      },
+      {
+        Key: "_data_source_sync_job_execution_id",
+        Value: {
+          StringValue: jobExecutionId,
+        },
+      },
+      {
+        Key: "_source_uri",
+        Value: {
+          StringValue: url,
+        },
+      },
+      {
+        Key: "_created_at",
+        Value: {
+          DateValue: Date.now(),
+        },
+      },
+    ],
+  };
+  return doc;
+}
+
 async function getDataSourceIdFromDataSourceName(
   kendraIndexId,
   dataSourceName

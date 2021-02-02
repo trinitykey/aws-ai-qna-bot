@@ -46,6 +46,7 @@ exports.handler = async function(event, context) {
             body: JSON.stringify(
                 {
                     Status:"Success",
+                    Error:"",
                     Response: response
                 }),
             headers: {},
@@ -61,7 +62,7 @@ exports.handler = async function(event, context) {
     console.log(e);
     return {
       statusCode: 200,
-      body: {Status:"Failed",Error:e},
+      body:JSON.stringify( {Status:"Failed",Error:e.message}),
       headers: {},
       isBase64Encoded: false,
     };
