@@ -251,7 +251,16 @@ function pylambda(name){
       "Role": {"Fn::GetAtt": ["ExtensionLambdaRole","Arn"]},
       "Runtime": "python3.6",
       "Timeout": 300,
-
+      "VpcConfig" : {
+        "Fn::If": [ "VPCEnabled", {
+            "SubnetIds": { "Fn::Split" : [ ",", {"Ref": "VPCSubnetIdList"} ] },
+            "SecurityGroupIds": { "Fn::Split" : [ ",", {"Ref": "VPCSecurityGroupIdList"} ] },
+        }, {"Ref" : "AWS::NoValue"} ]
+    },
+    "TracingConfig" : {
+        "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+            {"Ref" : "AWS::NoValue"} ]
+    },
       "Tags":[{
           Key:"Type",
           Value:"LambdaHook"

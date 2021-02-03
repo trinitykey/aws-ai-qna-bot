@@ -78,27 +78,31 @@ module.exports=Object.assign(
           "Principal": "apigateway.amazonaws.com"
         }
       },
-      "Deployment":{
-        "Type": "Custom::ApiDeployment",
-        "DeletionPolicy":"Retain",
-        "DependsOn":[
+      Deployment: {
+        Type: "Custom::ApiDeployment",
+        DeletionPolicy: "Retain",
+        DependsOn: [
           "ConnectGet",
           "ConnectApiResource",
           "InvokePermissionConnectLambda",
           "TranslatePost",
           "TranslateApiResource",
           "TranslateApiRootResource",
-          "InvokePermissionTranslateLambda"
+          "KendraCrawlerPost",
+          "KendraCrawlerApiResource",
+          "KendraCrawlerStatusRootApiResource",
+          "InvokePermissionTranslateLambda",
+            "KendraCrawlerStatusGet"
         ],
-        "Properties": {
-          "ServiceToken": { "Ref" : "CFNLambda" },
-          "restApiId": {"Ref": "Api"},
-            "buildDate":new Date(),
-            "stage":"prod",
-            "ApiDeploymentId": {"Ref": "ApiDeploymentId"},
-            "Encryption":{"Ref": "Encryption"}
+        Properties: {
+          ServiceToken: { Ref: "CFNLambda" },
+          restApiId: { Ref: "Api" },
+          buildDate: new Date(),
+          stage: "prod",
+          ApiDeploymentId: { Ref: "ApiDeploymentId" },
+          Encryption: { Ref: "Encryption" },
         },
-    },
+      },
       "ConnectGet": {
         "Type": "AWS::ApiGateway::Method",
         "Properties": {
@@ -729,31 +733,6 @@ module.exports=Object.assign(
         FunctionName: { "Fn::GetAtt": ["KendraCrawlerLambda", "Arn"] },
         SourceArn: { Ref: "KendraCrawlerSnsTopic" },
         Principal: "sns.amazonaws.com",
-      },
-    },
-    Deployment: {
-      Type: "Custom::ApiDeployment",
-      DeletionPolicy: "Retain",
-      DependsOn: [
-        "ConnectGet",
-        "ConnectApiResource",
-        "InvokePermissionConnectLambda",
-        "TranslatePost",
-        "TranslateApiResource",
-        "TranslateApiRootResource",
-        "KendraCrawlerPost",
-        "KendraCrawlerApiResource",
-        "KendraCrawlerStatusRootApiResource",
-        "InvokePermissionTranslateLambda",
-          "KendraCrawlerStatusGet"
-      ],
-      Properties: {
-        ServiceToken: { Ref: "CFNLambda" },
-        restApiId: { Ref: "Api" },
-        buildDate: new Date(),
-        stage: "prod",
-        ApiDeploymentId: { Ref: "ApiDeploymentId" },
-        Encryption: { Ref: "Encryption" },
       },
     },
     CloudWatchEventRule: {

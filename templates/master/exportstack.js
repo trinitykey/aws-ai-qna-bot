@@ -24,6 +24,8 @@ module.exports={
                 "Stage":{"Ref":"Stage"},
                 "ApiDeploymentId":{"Ref":"Deployment"},
                 "KendraCrawlerSnsTopic":{"Ref":"KendraCrawlerSnsTopic"},
+                "DefaultQnABotSettings":{"Ref":"DefaultQnABotSettings"},
+                "CustomQnABotSettings":{"Ref":"CustomQnABotSettings"},
                 "VPCSubnetIdList" : { "Fn::Join" : [ ",", {"Ref":"VPCSubnetIdList"} ] },
                 "VPCSecurityGroupIdList": { "Fn::Join" : [ ",", {"Ref":"VPCSecurityGroupIdList"} ] },
             }
