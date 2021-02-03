@@ -25,9 +25,6 @@ async function run_query_es(params, qid) {
     return es_response;
 }
 
-
-
-
 /**
  * Function to query kendraClient and return results via Promise
  * @param kendraClient
@@ -197,7 +194,6 @@ async function routeKendraRequest(request_params) {
     if (request_params.size) {
         num = Math.min(num, request_params.size);
     }
-    console.log(`request_params.kendra_faq_index ${request_params.kendra_faq_index}`)
     for (j=0; j<num; j++) {
         faq_struct = json_struct[j];
         

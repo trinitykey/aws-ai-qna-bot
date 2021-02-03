@@ -12,6 +12,9 @@ module.exports={
                 "EsEndpoint": {"Fn::GetAtt": ["ESVar", "ESAddress"]},
                 "EsProxyLambda": {"Fn::GetAtt":["ESProxyLambda","Arn"]},
                 "ExportBucket": {"Ref":"ExportBucket"},
+                "VPCSubnetIdList" : { "Fn::Join" : [ ",", {"Ref":"VPCSubnetIdList"} ] },
+                "VPCSecurityGroupIdList": { "Fn::Join" : [ ",", {"Ref":"VPCSecurityGroupIdList"} ] },
+                "XraySetting":{"Ref": "XraySetting"},
                 "FallbackIntent": {"Ref":"IntentFallback"},
                 "Intent":{"Ref":"Intent"},
                 "BotName":{"Ref":"LexBot"},
@@ -21,9 +24,8 @@ module.exports={
                 "Stage":{"Ref":"Stage"},
                 "ApiDeploymentId":{"Ref":"Deployment"},
                 "KendraCrawlerSnsTopic":{"Ref":"KendraCrawlerSnsTopic"},
-
-                "DefaultQnABotSettings":{"Ref":"DefaultQnABotSettings"},
-                "CustomQnABotSettings":{"Ref":"CustomQnABotSettings"},
+                "VPCSubnetIdList" : { "Fn::Join" : [ ",", {"Ref":"VPCSubnetIdList"} ] },
+                "VPCSecurityGroupIdList": { "Fn::Join" : [ ",", {"Ref":"VPCSecurityGroupIdList"} ] },
             }
         }
     }

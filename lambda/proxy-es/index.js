@@ -4,9 +4,9 @@ var cfnLambda=require('cfn-lambda')
 var request=require('./lib/request')
 
 const filter = text => {
-    if (process.env.CLOUDWATCHLOGGINGDISABLED === "true")
+    if (process.env.CLOUDWATCHLOGGINGDISABLED === "true"){
         return "cloudwatch logging disabled";
-    else {
+    } else {
         if (process.env.QNAREDACT === "true") {
             let re = new RegExp(process.env.REDACTING_REGEX, "g");
             return text.replace(re, "XXXXXX");
@@ -30,5 +30,4 @@ exports.query=function(event,context,callback){
     .then((x)=>callback(null,x)) 
     .catch(callback)
 }
-
 

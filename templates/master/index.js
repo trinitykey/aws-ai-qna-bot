@@ -180,6 +180,21 @@ module.exports={
         "AllowedValues" : ["2", "4"],
         "Default":"2"      
     },
+        "VPCSubnetIdList" : {
+        "Description" : "Subnet IDs", "Type": "CommaDelimitedList",
+        "Default": ""
+    },
+    "VPCSecurityGroupIdList": {
+        "Description" : "Security Group IDs", "Type": "CommaDelimitedList",
+        "Default": ""
+    },
+    "XraySetting":{
+        "Type":"String",
+        "Description": "Configure Lambdas with X-Ray enabled",
+        "AllowedValues": ["FALSE", "TRUE"],
+        "Default":"FALSE",
+        "ConstraintDescription":"Allowed Values are FALSE or TRUE"
+    },
   },
   "Conditions":{
     "Public":{"Fn::Equals":[{"Ref":"PublicOrPrivate"},"PUBLIC"]},

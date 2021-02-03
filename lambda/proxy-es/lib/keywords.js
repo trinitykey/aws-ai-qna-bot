@@ -82,12 +82,3 @@ module.exports=function(params){
     return get_keywords(params);
 };
 
-
-/*
-var testparams = {
-    question: "You're really dumb. I’m really smart. I can't believe it",
-    use_keyword_filters: true,
-    es_expand_contractions: `{"you're":"you are","I'm":"I am","can't":"cannot"}`
-};
-get_keywords(testparams);
-*/

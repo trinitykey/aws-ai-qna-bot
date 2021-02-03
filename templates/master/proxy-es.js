@@ -31,6 +31,16 @@ module.exports={
         "Role": {"Fn::GetAtt": ["ESProxyLambdaRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
+        "VpcConfig" : {
+            "Fn::If": [ "VPCEnabled", {
+                "SubnetIds": {"Ref": "VPCSubnetIdList"},
+                "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            }, {"Ref" : "AWS::NoValue"} ]
+        },
+        "TracingConfig" : {
+            "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+                {"Ref" : "AWS::NoValue"} ]
+        },
         "Tags":[{
             Key:"Type",
             Value:"Service"
@@ -56,6 +66,16 @@ module.exports={
         "Role": {"Fn::GetAtt": ["ESProxyLambdaRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
+        "VpcConfig" : {
+            "Fn::If": [ "VPCEnabled", {
+                "SubnetIds": {"Ref": "VPCSubnetIdList"},
+                "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            }, {"Ref" : "AWS::NoValue"} ]
+        },
+        "TracingConfig" : {
+            "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+                {"Ref" : "AWS::NoValue"} ]
+        },
         "Tags":[{
             Key:"Type",
             Value:"Service"
@@ -83,6 +103,16 @@ module.exports={
         "Role": {"Fn::GetAtt": ["ESProxyLambdaRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
+        "VpcConfig" : {
+            "Fn::If": [ "VPCEnabled", {
+                "SubnetIds": {"Ref": "VPCSubnetIdList"},
+                "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            }, {"Ref" : "AWS::NoValue"} ]
+        },
+        "TracingConfig" : {
+            "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+                {"Ref" : "AWS::NoValue"} ]
+        },
         "Tags":[{
             Key:"Type",
             Value:"Service"
@@ -128,6 +158,16 @@ module.exports={
         "Role": {"Fn::GetAtt": ["ESLoggingLambdaRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
+        "VpcConfig" : {
+            "Fn::If": [ "VPCEnabled", {
+                "SubnetIds": {"Ref": "VPCSubnetIdList"},
+                "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            }, {"Ref" : "AWS::NoValue"} ]
+        },
+        "TracingConfig" : {
+            "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+                {"Ref" : "AWS::NoValue"} ]
+        },
         "Tags":[{
             Key:"Type",
             Value:"Logging"
@@ -153,6 +193,16 @@ module.exports={
         "Role": {"Fn::GetAtt": ["ESProxyLambdaRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
+        "VpcConfig" : {
+            "Fn::If": [ "VPCEnabled", {
+                "SubnetIds": {"Ref": "VPCSubnetIdList"},
+                "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            }, {"Ref" : "AWS::NoValue"} ]
+        },
+        "TracingConfig" : {
+            "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+                {"Ref" : "AWS::NoValue"} ]
+        },
         "Tags":[{
             Key:"Type",
             Value:"Query"
@@ -181,6 +231,16 @@ module.exports={
         "Role": {"Fn::GetAtt": ["ESProxyLambdaRole","Arn"]},
         "Runtime": "nodejs10.x",
         "Timeout": 300,
+        "VpcConfig" : {
+            "Fn::If": [ "VPCEnabled", {
+                "SubnetIds": {"Ref": "VPCSubnetIdList"},
+                "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            }, {"Ref" : "AWS::NoValue"} ]
+        },
+        "TracingConfig" : {
+            "Fn::If": [ "XRAYEnabled", {"Mode": "Active"},
+                {"Ref" : "AWS::NoValue"} ]
+        },
         "Tags":[{
             Key:"Type",
             Value:"Service"
@@ -205,39 +265,20 @@ module.exports={
         "Path": "/",
         "ManagedPolicyArns": [
           "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+          "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
           "arn:aws:iam::aws:policy/TranslateReadOnly",
           {"Ref":"QueryPolicy"},
           "arn:aws:iam::aws:policy/AmazonLexFullAccess"
         ],
         "Policies": [
           {
-          	"PolicyName": "TranslatePolicy",
-          	"PolicyDocument": {
-          		"Version": "2012-10-17",
-          		"Statement": [{
-          			"Effect": "Allow",
-          			"Action": ["translate:ListTerminology"],              
-          			"Resource": "*"
-          		}]
-          	}
-          },         {
           	"PolicyName": "ParamStorePolicy",
           	"PolicyDocument": {
           		"Version": "2012-10-17",
           		"Statement": [{
           			"Effect": "Allow",
           			"Action": ["ssm:GetParameter","ssm:GetParameters"],
-          			"Resource": "*"
-          		}]
-          	}
-          },
-          {
-          	"PolicyName": "ComprehendPolicy",
-          	"PolicyDocument": {
-          		"Version": "2012-10-17",
-          		"Statement": [{
-          			"Effect": "Allow",
-          			"Action": ["comprehend:DetectPiiEntities"],
           			"Resource": "*"
           		}]
           	}
@@ -305,6 +346,8 @@ module.exports={
         }],
         "ManagedPolicyArns": [
           "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+          "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
         ]
       }
     },
