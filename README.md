@@ -190,7 +190,7 @@ VPC and is outside the scope of this document.
 
 QnABot now supports indexing web pages into Kendra. Added three settings parameters:
 
-* KENDRA_INDEXER_URLS - a common separated list of URLs which should be included in your Kendra index.
+* KENDRA_INDEXER_URLS - a comma separated list of URLs which should be included in your Kendra index.
 * KENDRA_INDEXER_SCHEDULER - specify how often you would like QnABot to re-index the list of URLs. The expression should use 
 [AWS CloudWatch rate expressions](https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html) 
 * KENDRA_WEB_PAGE_INDEX - The Kendra Index Id where Kendra should add the custom data soutce 
