@@ -33,7 +33,8 @@ module.exports={
         "KendraCrawlerSnsTopic":{"Type":"String"},
         "VPCSubnetIdList" : {"Type": "String"},
         "VPCSecurityGroupIdList": {"Type": "String"},
-        "XraySetting": {"Type": "String"}
+        "XraySetting": {"Type": "String"},
+        "KendraCrawlerSnsTopic":{"Type":"String"}
     },
     "Conditions": {
         "VPCEnabled": { "Fn::Not": [
