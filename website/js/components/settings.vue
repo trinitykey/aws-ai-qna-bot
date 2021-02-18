@@ -21,8 +21,8 @@
         v-card
             v-card-title New Setting
             v-card-text
-                v-text-field(label="Name")
-                v-text-field(label="Value")
+                v-text-field(label="Name" v-model="newKey")
+                v-text-field(label="Value" v-model="newValue")
             v-card-actions
                 v-spacer
                 v-btn(@click="addSetting") Add
@@ -56,7 +56,9 @@ module.exports = {
             defaultSettings: {},
             customSettings: {},
             settingsHolder: {},
-            successAlert: false
+            successAlert: false,
+            newKey: "",
+            newValue: ""
         }
     },
     components: {},
@@ -112,10 +114,20 @@ module.exports = {
             this.showAddModal = true;
         },
         closeModal: async function() {
-            this.showModal = false;
+            this.showAddModal = false;
         },
         addSetting: async function() {
-            console.log('hi tom');
+            if (this.newKey.length >= 1) {
+                console.log('hi tom');
+                this.mergedSettings[this.newKey] = this.newValue;
+                this.customSettings[this.newKey] = this.newValue;
+                this.settingsHolder[this.newKey] = this.newValue;
+            }
+            console.log(this.mergedSettings);
+
+            this.showAddModal = false;
+            this.newValue = "";
+            this.newKey = "";
         }
     }
 }
