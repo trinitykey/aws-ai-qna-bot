@@ -6,7 +6,6 @@ const sleep = require("util").promisify(setTimeout);
 const https = require("https");
 const pdfreader = require("pdfreader");
 
-
 AWS.config.update({ region: "us-east-1" });
 
 /**
@@ -25,20 +24,22 @@ function isJson(str) {
 
 async function retry(count, func) {
   var retryCount = 0;
-  var error = {}
+  var error = {};
   while (retryCount < count) {
     try {
       return await func();
     } catch (err) {
       error = err;
-      console.log(`retrying error:` + JSON.stringify(err));
-      retryCount++;
-      await sleep(3000);
-
+      if (err.retryable !== undefined && err.retryable === true) {
+        console.log(`retrying error:` + JSON.stringify(err));
+        retryCount++;
+        await sleep(3000);
+      } else {
+        break;
+      }
     }
   }
   throw error;
-
 }
 
 function str2bool(settings) {
@@ -152,7 +153,7 @@ async function createKendraDocument(page, jobExecutionId, dataSourceId) {
       .update(url)
       .digest("base64"),
     Blob: pageText,
-    ContentType:"HTML",
+    ContentType: "HTML",
     Title: await page.title(),
     Attributes: [
       {
@@ -184,16 +185,13 @@ async function createKendraDocument(page, jobExecutionId, dataSourceId) {
   return doc;
 }
 
-
-
-
 async function bufferize(url) {
   var hn = url.substring(url.search("//") + 2);
   hn = hn.substring(0, hn.search("/"));
   var pt = url.substring(url.search("//") + 2);
   pt = pt.substring(pt.search("/"));
   const options = { hostname: hn, port: 443, path: pt, method: "GET" };
-  return new Promise(function (resolve, reject) {
+  return new Promise(function(resolve, reject) {
     var buff = new Buffer.alloc(0);
     const req = https.request(options, (res) => {
       res.on("data", (d) => {
@@ -214,11 +212,11 @@ async function readlines(buffer, xwidth) {
   return new Promise((resolve, reject) => {
     var pdftxt = new Array();
     var pg = 0;
-    new pdfreader.PdfReader().parseBuffer(buffer, function (err, item) {
+    new pdfreader.PdfReader().parseBuffer(buffer, function(err, item) {
       if (err) console.log("pdf reader error: " + err);
       else if (!item) {
-        pdftxt.forEach(function (a, idx) {
-          pdftxt[idx].forEach(function (v, i) {
+        pdftxt.forEach(function(a, idx) {
+          pdftxt[idx].forEach(function(v, i) {
             pdftxt[idx][i].splice(1, 2);
           });
         });
@@ -229,7 +227,7 @@ async function readlines(buffer, xwidth) {
       } else if (item.text) {
         var t = 0;
         var sp = "";
-        pdftxt[pg].forEach(function (val, idx) {
+        pdftxt[pg].forEach(function(val, idx) {
           if (val[1] == item.y) {
             if (xwidth && item.x - val[2] > xwidth) {
               sp += " ";
@@ -248,16 +246,16 @@ async function readlines(buffer, xwidth) {
   });
 }
 async function createKendraDocumentFromPDF(url, jobExecutionId, dataSourceId) {
-  var pageText = await  getTextFromPDF(url);
+  var pageText = await getTextFromPDF(url);
   console.log("Creating document for " + url);
-  console.log(pageText)
+  console.log(pageText);
   doc = {
     Id: crypto
       .createHash("sha1")
       .update(url)
       .digest("base64"),
     Blob: pageText,
-    ContentType:"PLAIN_TEXT",
+    ContentType: "PLAIN_TEXT",
     Title: url.split("/").slice(-1)[0],
     Attributes: [
       {
@@ -289,13 +287,12 @@ async function createKendraDocumentFromPDF(url, jobExecutionId, dataSourceId) {
   return doc;
 }
 
-async function getTextFromPDF(url){
-  var pdfBuffer = await bufferize(url)
-  var pdfParagraphs = await readlines(pdfBuffer)
-  console.log(JSON.stringify(pdfParagraphs))
-  var allLines = pdfParagraphs.flat(5)
-  return allLines.join("\n")
-
+async function getTextFromPDF(url) {
+  var pdfBuffer = await bufferize(url);
+  var pdfParagraphs = await readlines(pdfBuffer);
+  console.log(JSON.stringify(pdfParagraphs));
+  var allLines = pdfParagraphs.flat(5);
+  return allLines.join("\n");
 }
 
 async function getDataSourceIdFromDataSourceName(
@@ -309,15 +306,31 @@ async function getDataSourceIdFromDataSourceName(
   console.log(
     `Finding datasourceId for ${dataSourceName} for IndexID ${kendraIndexId}`
   );
-  var foundDataSourceIds = (await retry(
-    3,
-    async () =>
-      await kendra.listDataSources({ IndexId: kendraIndexId }).promise()
-  )).SummaryItems.filter((s) => s.Name == dataSourceName).map((m) => m.Id);
-  if (foundDataSourceIds.length == 0) {
-    return undefined;
+  try {
+    var foundDataSourceIds = (await retry(
+      3,
+      async () =>
+        await kendra.listDataSources({ IndexId: kendraIndexId }).promise()
+    )).SummaryItems.filter((s) => s.Name == dataSourceName).map((m) => m.Id);
+  } catch (err) {
+    if (err.statusCode == 400) {
+      return {
+        Error: `Kendra IndexId ${kendraIndexId} Not Found`,
+      };
+    }
+    throw err;
   }
-  return foundDataSourceIds[0];
+  console.log("DEBUG " + JSON.stringify(foundDataSourceIds))
+  if (!foundDataSourceIds) {
+    return {
+      Error: `NOTCREATED`,
+      DataSourceId: ``,
+    };
+  }
+  return {
+    Error: "",
+    DataSourceId: foundDataSourceIds[0],
+  };
 }
 async function startKendraSync(kendraIndexId, name, forceSync = false) {
   var kendra = new AWS.Kendra();
@@ -328,10 +341,11 @@ async function startKendraSync(kendraIndexId, name, forceSync = false) {
   console.log(
     `Starting Kendra sync for IndexId ${kendraIndexId} DataSource Name ${name}`
   );
-  foundDataSourceId = await getDataSourceIdFromDataSourceName(
-    kendraIndexId,
-    name
-  );
+  var result = await getDataSourceIdFromDataSourceName(kendraIndexId, name);
+  if (result.Error) {
+    throw result.Error;
+  }
+  var foundDataSourceId = result.DataSourceId;
   console.log(`Found datasourceId ${foundDataSourceId}`);
   if (!foundDataSourceId) {
     var params = {
@@ -366,10 +380,15 @@ async function startKendraSync(kendraIndexId, name, forceSync = false) {
 
 async function stopSyncJob(kendraIndexId, dataSourceName) {
   var kendra = new AWS.Kendra();
-  var indexId = await getDataSourceIdFromDataSourceName(
+
+  var result = await getDataSourceIdFromDataSourceName(
     kendraIndexId,
     dataSourceName
   );
+  if (result.Error) {
+    throw result.Error;
+  }
+  var indexId = result.DataSourceId;
   console.log(`Stop syncing Datasource ${dataSourceName}:${indexId}`);
   var status = await getSyncJobStatus(kendraIndexId, indexId);
   if (status.Status == "PENDING") {
@@ -386,12 +405,17 @@ async function stopSyncJob(kendraIndexId, dataSourceName) {
 async function putDocuments(kendraIndexId, dataSourceId, documents) {
   try {
     var kendra = new AWS.Kendra();
-    console.log("documents => " + JSON.stringify(documents.map(d => {
-      return {
-        DocumentID: d.Id,
-        Title: d.Title
-      }
-    })))
+    console.log(
+      "documents => " +
+        JSON.stringify(
+          documents.map((d) => {
+            return {
+              DocumentID: d.Id,
+              Title: d.Title,
+            };
+          })
+        )
+    );
     for (var i = 0; i < documents.length; i += 10) {
       //batchPutDocuments can't handle more than 10 documents
       var end = documents.length ? i + 10 : documents.length - 1;
@@ -568,19 +592,19 @@ exports.handler = async (event, context, callback) => {
           isBase64Encoded: false,
         };
       }
-      var dataSourceId = await getDataSourceIdFromDataSourceName(
+      var result = await getDataSourceIdFromDataSourceName(
         kendraIndexId,
         process.env.DATASOURCE_NAME
       );
-      if (!dataSourceId) {
+      if (result.Error) {
         return {
           statusCode: 200,
-          body: JSON.stringify({ Status: "NOTCREATED" }),
+          body: JSON.stringify({ Status: result.Error }),
           isBase64Encoded: false,
         };
       }
 
-      var syncStatus = await getSyncJobStatus(kendraIndexId, dataSourceId);
+      var syncStatus = await getSyncJobStatus(kendraIndexId, result.DataSourceId);
       return {
         statusCode: 200,
         body: JSON.stringify(syncStatus),
@@ -668,7 +692,7 @@ async function indexPages(
       documents
     );
 
-    console.log("Put document results - " + JSON.stringify(putResults))
+    console.log("Put document results - " + JSON.stringify(putResults));
     if (page && page.Browser) {
       page.Browser.close();
     }
@@ -678,19 +702,25 @@ async function indexPages(
   }
 }
 
-
-
 // (async function main() {
-//   process.env.DEFAULT_SETTINGS_PARAM = "CFN-DefaultQnABotSettings-JQRrDQLejA6E";
-//   process.env.CUSTOM_SETTINGS_PARAM = "CFN-CustomQnABotSettings-oZwgxFj59Cvt";
-//   process.env.DATASOURCE_NAME = "qnaBotKendraCrawler";
+//   process.env.DEFAULT_SETTINGS_PARAM = "CFN-DefaultQnABotSettings-oV2Ix0eaXC53";
+//   process.env.CUSTOM_SETTINGS_PARAM = "CFN-CustomQnABotSettings-xC1d440g02LZ";
+//   process.env.DATASOURCE_NAME = "QNABotKendraCrawler-oV2Ix0eaXC53";
 
-//   var results = getTextFromPDF("https://dlt.ri.gov/emergencyui/covidupdates122720.pdf");
+//   var status = await getDataSourceIdFromDataSourceName(
+//     "c46b5bd5-c1d2-4091-9f89-b9e9c4e7d07a",
+//     "QNABotKendraCrawler-oV2Ix0eaXC53"
+//   );
 
-//   result = await bufferize("https://dlt.ri.gov/emergencyui/WorkShare%20FAQs%2012.11.20.pdf")
-//   var lines = await readlines(result)
-//   var allLines = lines.flat(5)
-//   var allText = lines.join("\r\n")
-//   console.log(allText)
+//   var results = getTextFromPDF(
+//     "https://dlt.ri.gov/emergencyui/covidupdates122720.pdf"
+//   );
 
+//   result = await bufferize(
+//     "https://dlt.ri.gov/emergencyui/WorkShare%20FAQs%2012.11.20.pdf"
+//   );
+//   var lines = await readlines(result);
+//   var allLines = lines.flat(5);
+//   var allText = lines.join("\r\n");
+//   console.log(allText);
 // })();
