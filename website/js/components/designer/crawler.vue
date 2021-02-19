@@ -46,7 +46,7 @@ module.exports={
       text:false,
       ready:false,
       kendraIndexerEnabled:false,
-      lastStatusCheck: undefined
+      lastStatusCheck: Date.now()
     }
   },
   components:{
@@ -58,13 +58,15 @@ module.exports={
     console.log("created");
     var self = this;;
     this.poll( () => {
+      console.log("polling")
+      console.log("last status check " + Date.now())
       if(!this.lastStatusCheck || Date.now() - this.lastStatusCheck > 9000){
         self.getKendraIndexingStatus().then((data) => {
           self.status = data.Status;
         })
        }
       this.lastStatusCheck = Date.now();
-
+      //if the Kendra Start Index isn't displayed -- stop syncing
       return document.getElementById('btnKendraStartIndex').offsetWidth == 0;
     },600000,10000 ).catch((error) => console.log("Error trying to retrieve status " + error));
   },    

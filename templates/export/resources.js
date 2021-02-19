@@ -446,6 +446,19 @@ module.exports=Object.assign(
         Role: { "Fn::GetAtt": ["TranslateRole", "Arn"] },
         Runtime: "nodejs10.x",
         Timeout: 300,
+        "VpcConfig": {
+          "Fn::If": [
+            "VPCEnabled",
+            {
+              "SubnetIds": {"Ref": "VPCSubnetIdList"},
+              "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            },
+            {"Ref": "AWS::NoValue"}
+          ]
+        },
+        "TracingConfig": {
+          "Fn::If": ["XRAYEnabled", {"Mode": "Active"}, {"Ref": "AWS::NoValue"}]
+        },
         Tags: [
           {
             Key: "Type",
@@ -503,6 +516,19 @@ module.exports=Object.assign(
         Role: { "Fn::GetAtt": ["TranslateRole", "Arn"] },
         Runtime: "nodejs10.x",
         Timeout: 300,
+        "VpcConfig": {
+          "Fn::If": [
+            "VPCEnabled",
+            {
+              "SubnetIds": {"Ref": "VPCSubnetIdList"},
+              "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            },
+            {"Ref": "AWS::NoValue"}
+          ]
+        },
+        "TracingConfig": {
+          "Fn::If": ["XRAYEnabled", {"Mode": "Active"}, {"Ref": "AWS::NoValue"}]
+        },
         Tags: [
           {
             Key: "Type",
@@ -833,6 +859,19 @@ module.exports=Object.assign(
           S3Bucket: { Ref: "BootstrapBucket" },
           S3Key: { "Fn::Sub": "${BootstrapPrefix}/lambda/kendra-crawler.zip" },
           S3ObjectVersion: { Ref: "KendraCodeVersion" },
+        },
+        "VpcConfig": {
+          "Fn::If": [
+            "VPCEnabled",
+            {
+              "SubnetIds": {"Ref": "VPCSubnetIdList"},
+              "SecurityGroupIds": {"Ref": "VPCSecurityGroupIdList"}
+            },
+            {"Ref": "AWS::NoValue"}
+          ]
+        },
+        "TracingConfig": {
+          "Fn::If": ["XRAYEnabled", {"Mode": "Active"}, {"Ref": "AWS::NoValue"}]
         },
         Environment: {
           Variables: {

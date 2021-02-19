@@ -26,7 +26,11 @@ function get_keywords_from_comprehend(params) {
                 if (stopwords.split(",").indexOf(syntaxtoken.Text.toLowerCase()) == -1) {
                     if (syntaxtoken.PartOfSpeech.Score >= syntax_confidence_limit) {
                         console.log("+KEYWORD: " + syntaxtoken.Text);
-                        keywords = keywords + syntaxtoken.Text + " ";
+                        if(!(syntaxtoken.Text.startsWith("'") || syntaxtoken.Text.startsWith("`"))){
+                            keywords = keywords + syntaxtoken.Text + " ";
+                        }else{
+                            console.log("Not including " + syntaxtoken.Text)
+                        }
                     } else {
                         console.log("X score < ", syntax_confidence_limit, " (threshold)");
                     }

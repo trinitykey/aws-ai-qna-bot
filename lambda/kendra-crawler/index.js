@@ -320,7 +320,6 @@ async function getDataSourceIdFromDataSourceName(
     }
     throw err;
   }
-  console.log("DEBUG " + JSON.stringify(foundDataSourceIds))
   if (!foundDataSourceIds) {
     return {
       Error: `NOTCREATED`,
