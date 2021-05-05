@@ -1,0 +1,56 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "iam:DetachRolePolicy",
+                "iam:GetPolicy",
+                "iam:DeleteRolePolicy",
+                "iam:DeletePolicy",
+                "iam:DeleteRole",
+                "iam:DeletePolicyVersion"
+            ],
+            "Resource": [
+                "arn:aws:iam::xxxx:role/qna*",
+                "arn:aws:iam::xxxx:role/QnA*",
+                "arn:aws:iam::xxxx:policy/qna*",
+                "arn:aws:iam::xxxx:policy/QnA*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:DeleteDashboards",
+                "ssm:DeleteParameter",
+                "iam:GetPolicy",
+                "iam:ListPolicyVersions",
+                "sns:DeleteTopic",
+                "kms:ScheduleKeyDeletion",
+                "lambda:DeleteFunction",
+                "lambda:RemovePermission"
+            ],
+            "Resource": [
+                "arn:aws:kms:*:xxxx:key/*",
+                "arn:aws:lambda:*:xxxx:function:qna*",
+                "arn:aws:lambda:*:xxxx:function:QnA*",
+                "arn:aws:cloudwatch::xxxx:dashboard/*qna*",
+                "arn:aws:cloudwatch::xxxx:dashboard/*QnA*",
+                "arn:aws:ssm:*:xxxx:parameter/*qna*",
+                "arn:aws:ssm:*:xxxx:parameter/*QnA*",
+                "arn:aws:ssm:*:xxxx:parameter/CFN-DefaultUserPool*",
+                "arn:aws:sns:*:xxxx:qna*",
+                "arn:aws:sns:*:xxxx:QnA*",
+                "arn:aws:iam::xxxx:policy/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": "sns:Unsubscribe",
+            "Resource": "*"
+        }
+    ]
+}
