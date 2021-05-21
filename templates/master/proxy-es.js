@@ -382,6 +382,27 @@ module.exports={
         ]
       }
     },
+    "CommonLambdaLayerVersion":{
+      "Type": "Custom::S3Version",
+      "Properties": {
+          "ServiceToken": { "Fn::GetAtt" : ["CFNLambda", "Arn"] },
+          "Bucket": {"Ref":"BootstrapBucket"},
+          "Key": {"Fn::Sub":"${BootstrapPrefix}/lambda/common.zip"},
+          "BuildDate":(new Date()).toISOString()
+      }
+  },
+    "CommonLambdaLayer": {
+      "Type" : "AWS::Lambda::LayerVersion",
+      "Properties" : {
+          "CompatibleRuntimes" : ["nodejs14.x","nodejs12.x","nodejs10.x"],
+          "Content" : {
+            "S3Bucket": {"Ref":"BootstrapBucket"},
+            "S3Key": {"Fn::Sub":"${BootstrapPrefix}/lambda/common.zip"},
+            "S3ObjectVersion":{"Ref":"CommonLambdaLayerVersion"}
+          },
+          "Description" : "Common Utilities used by QnABot Lambdas and custom lambda hooks",
+        }
+    },
     "QueryPolicy": {
       "Type": "AWS::IAM::ManagedPolicy",
       "Properties": {
