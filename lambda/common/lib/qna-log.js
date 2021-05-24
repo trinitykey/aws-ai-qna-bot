@@ -14,42 +14,44 @@ function _getCallerInfo(callLevel) {
   };
 }
 
-function verbose(req, res, message) {
-  _log("VERBOSE", req, res, message, 4);
+function verbose(params) {
+  _log("VERBOSE", params, 4);
 }
 
-function debug(req, res, message) {
-  _log("DEBUG", req, res, message, 4);
+function debug(params) {
+  _log("DEBUG", params, 4);
 }
 
-function info(req, res, message) {
-  _log("INFO", req, res, message, 4);
+function info(params) {
+  _log("INFO", params, 4);
 }
 
-function warn(req, res, message) {
-  _log("WARN", req, res, message, 4);
+function warn(params) {
+  _log("WARN", params, 4);
 }
 
-function error(req, res, message) {
-  _log("ERROR", req, res, message, 4);
+function error(params) {
+  _log("ERROR", params.req, params, 4);
 }
 
-function fatal(req, res, message) {
-  _log("FATAL", req, res, message, 4);
+function fatal(params) {
+  _log("FATAL", params, 4);
 }
 
-function _log(logLevel, req, res, message, callLevel = 3) {
+function _log(logLevel, params, callLevel = 3) {
+  settings = params.settings != undefined ? params.settings : _.get(req,"_settings")
+
   var callerInfo = _getCallerInfo(callLevel);
   var logLevels = ["VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"];
   var logLevelSetting = _.get(req, "_settings.LOG_LEVEL", "INFO", "FATAL");
   var redactVerifiedUserInfo =
-    _.get(req, "_settings.REDACT_VERIFIED_USER_INFO", "false").toLowerCase() ==
+    _.get(params.settings, "REDACT_VERIFIED_USER_INFO", "false").toLowerCase() ==
     "true";
   var redactAllUserInfo =
-    _.get(req, "_settings.REDACT_ALL_USER_INFO", "false").toLowerCase() ==
+    _.get(params.settings, "REDACT_ALL_USER_INFO", "true").toLowerCase() ==
     "true";
   var userIsVerified =
-    _.get(req, "userInfo.isVerifiedIdentity", "false") == "true";
+    _.get(params.req, "userInfo.isVerifiedIdentity", "false") == "true";
   var shouldRedact =
     redactAllUserInfo || (redactVerifiedUserInfo && userIsVerified);
 

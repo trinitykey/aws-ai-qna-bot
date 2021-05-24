@@ -5,6 +5,7 @@ var get_sentiment=require('./sentiment');
 var alexa = require('./alexa')
 var _ = require('lodash')
 var AWS = require('aws-sdk');
+var log = require("qna-log.js")
 
 function isJson(str) {
     try {
