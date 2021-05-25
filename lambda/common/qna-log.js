@@ -1,3 +1,4 @@
+
 _ = require("lodash");
 
 function _getCallerInfo(callLevel) {
@@ -14,27 +15,33 @@ function _getCallerInfo(callLevel) {
   };
 }
 
-function verbose(params) {
+function verbose(message,params={}) {
+  params.message = message
   _log("VERBOSE", params, 4);
 }
 
-function debug(params) {
+function debug(message,params={}) {
+  params.message = message
   _log("DEBUG", params, 4);
 }
 
-function info(params) {
+function info(message,params={}) {
+  params.message = message
   _log("INFO", params, 4);
 }
 
-function warn(params) {
+function warn(message,params={}) {
+  params.message = message
   _log("WARN", params, 4);
 }
 
-function error(params) {
+function error(message,params={}) {
+  params.message = message
   _log("ERROR", params.req, params, 4);
 }
 
-function fatal(params) {
+function fatal(message,params={}) {
+  params.message = message
   _log("FATAL", params, 4);
 }
 
@@ -43,7 +50,7 @@ function _log(logLevel, params, callLevel = 3) {
 
   var callerInfo = _getCallerInfo(callLevel);
   var logLevels = ["VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"];
-  var logLevelSetting = _.get(req, "_settings.LOG_LEVEL", "INFO", "FATAL");
+  var logLevelSetting = _.get(params.settings, "LOG_LEVEL", "INFO", "FATAL");
   var redactVerifiedUserInfo =
     _.get(params.settings, "REDACT_VERIFIED_USER_INFO", "false").toLowerCase() ==
     "true";
@@ -65,8 +72,8 @@ function _log(logLevel, params, callLevel = 3) {
   }
 
   var logMessage = {};
-  var loggedRequest = _.clone(req);
-  var loggedResponse = _.clone(res);
+  var loggedRequest = _.clone(params.req);
+  var loggedResponse = _.clone(params.res);
 
   var redactedUserProperties = [
     "sessionAttributes.qnabotcontext",
@@ -80,7 +87,7 @@ function _log(logLevel, params, callLevel = 3) {
   ];
 
   if (messageLogLevel >= 1) {
-    loggedRequest._settings = "xxxxxxx";
+    _.set(loggedRequest,"_settings","xxxxxxx");
   }
 
   logMessage.callerInfo = callerInfo;
@@ -94,7 +101,7 @@ function _log(logLevel, params, callLevel = 3) {
 
   logMessage.request = loggedRequest;
   logMessage.response = loggedResponse;
-  logMessage.message = message;
+  logMessage.message = params.message;
 
   console.log(JSON.stringify(logMessage));
 }

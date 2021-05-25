@@ -16,6 +16,8 @@ function isJson(str) {
     return true;
 }
 
+
+
 function str2bool(settings) {
     var new_settings = _.mapValues(settings, x => {
         if (_.isString(x)) {
@@ -53,34 +55,37 @@ async function get_settings() {
     var default_settings_param = process.env.DEFAULT_SETTINGS_PARAM;
     var custom_settings_param = process.env.CUSTOM_SETTINGS_PARAM;
 
-    console.log("Getting Default JWKS URL from SSM Parameter Store: ", default_jwks_param);
+    log.debug("Getting Default JWKS URL from SSM Parameter Store: "+ default_jwks_param);
     var default_jwks_url = await get_parameter(default_jwks_param);
 
-    console.log("Getting Default QnABot settings from SSM Parameter Store: ", default_settings_param);
+    log.debug("Getting Default QnABot settings from SSM Parameter Store: "+ default_settings_param);
     var default_settings = await get_parameter(default_settings_param);
 
-    console.log("Getting Custom QnABot settings from SSM Parameter Store: ", custom_settings_param);
+    log.debug("Getting Custom QnABot settings from SSM Parameter Store: "+ custom_settings_param);
     var custom_settings = await get_parameter(custom_settings_param);
 
     var settings = _.merge(default_settings, custom_settings);
+    var logSettings = {
+        settings:settings,
+    }
     _.set(settings, "DEFAULT_USER_POOL_JWKS_URL", default_jwks_url);
 
-    console.log("Merged Settings: ", settings);
+    log.debug("Merged Settings: ", logSettings);
 
     if (settings.ENABLE_REDACTING) {
-        console.log("redacting enabled");
+        log.info("redacting enabled",logSettings);
         process.env.QNAREDACT="true";
         process.env.REDACTING_REGEX=settings.REDACTING_REGEX;
     } else {
-        console.log("redacting disabled");
+        log.info("redacting disabled",logSettings);
         process.env.QNAREDACT="false";
         process.env.REDACTING_REGEX="";
     }
     if (settings.DISABLE_CLOUDWATCH_LOGGING) {
-        console.log("disable cloudwatch logging");
+        log.info("disable cloudwatch logging",logSettings);
         process.env.DISABLECLOUDWATCHLOGGING="true";
     } else {
-        console.log("enable cloudwatch logging");
+        log.info("enable cloudwatch logging",logSettings);
         process.env.DISABLECLOUDWATCHLOGGING="false";
     }
     return settings;
@@ -115,6 +120,11 @@ module.exports = async function parse(req, res) {
 
     // Add QnABot settings from Parameter Store
     var settings = await get_settings();
+    var logSettings = {
+        settings:settings,
+        req:req,
+        res:res
+    }
     _.set(req, "_settings", settings);
 
     req._type = req._event.version ? "ALEXA" : "LEX"
@@ -134,7 +144,7 @@ module.exports = async function parse(req, res) {
                     _.set(req,"_preferredResponseType","SSML") ;
                 }
             } else {
-                console.log("WARNING: Unrecognised value for outputDialogMode:", outputDialogMode);
+                log.warn(logSettings,"Unrecognised value for outputDialogMode:"+ outputDialogMode)
             }
             break;
         case 'ALEXA':

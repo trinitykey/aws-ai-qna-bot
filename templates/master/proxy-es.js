@@ -382,7 +382,7 @@ module.exports={
         ]
       }
     },
-    "CommonLambdaLayerVersion":{
+    "QnABotLambdaLayerVersion":{
       "Type": "Custom::S3Version",
       "Properties": {
           "ServiceToken": { "Fn::GetAtt" : ["CFNLambda", "Arn"] },
@@ -391,14 +391,14 @@ module.exports={
           "BuildDate":(new Date()).toISOString()
       }
   },
-    "CommonLambdaLayer": {
+    "QnABotLambdaLayer": {
       "Type" : "AWS::Lambda::LayerVersion",
       "Properties" : {
           "CompatibleRuntimes" : ["nodejs14.x","nodejs12.x","nodejs10.x"],
           "Content" : {
             "S3Bucket": {"Ref":"BootstrapBucket"},
             "S3Key": {"Fn::Sub":"${BootstrapPrefix}/lambda/common.zip"},
-            "S3ObjectVersion":{"Ref":"CommonLambdaLayerVersion"}
+            "S3ObjectVersion":{"Ref":"QnABotLambdaLayerVersion"}
           },
           "Description" : "Common Utilities used by QnABot Lambdas and custom lambda hooks",
         }
