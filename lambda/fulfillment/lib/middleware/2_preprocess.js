@@ -3,6 +3,8 @@ var Promise=require('bluebird');
 var util=require('./util');
 var jwt=require('./jwt');
 var AWS=require('aws-sdk');
+var log = require("qna-log.js")
+
 
 async function get_userInfo(userId, idattrs) {
     var default_userInfo = {
@@ -17,14 +19,14 @@ async function get_userInfo(userId, idattrs) {
             'UserId': userId
         },
     };
-    console.log("Getting user info for user: ", userId, "from DynamoDB table: ", usersTable);
+    log.info("Getting user info for user: ", userId, "from DynamoDB table: ", usersTable);
     var ddbResponse = {};
     try {
         ddbResponse = await docClient.get(params).promise();
     }catch(e){
-        console.log("DDB Exception caught.. can't retrieve userInfo: ", e)
+        log.error("DDB Exception caught.. can't retrieve userInfo: ", e)
     }
-    console.log("DDB Response: ", ddbResponse);
+    log.debug("DDB Response: ", ddbResponse);
     var req_userInfo = _.get(ddbResponse,"Item",default_userInfo);
     // append user identity attributes if known
     if (_.get(idattrs,'preferred_username')) {
@@ -50,7 +52,11 @@ async function get_userInfo(userId, idattrs) {
     var lastSeen = Date.parse(req_userInfo.LastSeen || "1970/1/1 12:00:00");
     var timeSinceLastInteraction = Math.abs(now - lastSeen)/1000; // seconds
     _.set(req_userInfo, 'TimeSinceLastInteraction', timeSinceLastInteraction);
-    console.log("Request User Info: ", req_userInfo);
+    var params = {
+        "PII":req_userInfo
+    }
+
+    log.info("Request User Info: ", params);
     return req_userInfo;
 }
 
@@ -60,7 +66,11 @@ async function update_userInfo(userId, req_userInfo) {
     res_userInfo.FirstSeen = req_userInfo.FirstSeen || dt.toString();
     res_userInfo.LastSeen = dt.toString();
     res_userInfo.InteractionCount = req_userInfo.InteractionCount + 1;
-    console.log("Response User Info: ", res_userInfo);
+    var params = {
+        "PII":req_userInfo
+    }
+
+    log.info("Request User Info: ", params);
     return res_userInfo;
 }
 
@@ -69,17 +79,17 @@ const comprehend_client = new AWS.Comprehend();
 const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ignore_list) => {
 
 
-    console.log("Testing redaction ")
+    log.info("Testing redaction ")
     if(piiRegex){
         let re = new RegExp(piiRegex,"g");
         let redacted_text = text.replace(re,"XXXXXX");
-        console.log(`redacted_text ${redacted_text} text ${text}`)
+        log.info`redacted_text ${redacted_text} text ${text}`)
         var result = redacted_text != text;
-        console.log(`Is Redacted ${result}`)
+        log.info(`Is Redacted ${result}`)
         if(result) //if the regex was returned. No need to call Comprehend
             return result;
     } else {
-        console.log("Warning: No value found for setting  PII_REJECTION_REGEX not using REGEX Matching")
+        log.warn("Warning: No value found for setting  PII_REJECTION_REGEX not using REGEX Matching")
     }
     if(useComprehendForPII){
         var params = {
@@ -92,18 +102,18 @@ const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ign
                 console.log(JSON.stringify(comprehendResult) + "entity count == " + comprehendResult.Entities.length )
                 if(!("Entities" in comprehendResult) ||  comprehendResult.Entities.length == 0)
                 {
-                    console.log("No PII found by Comprehend")
+                    log.info("No PII found by Comprehend")
                     return false;
                 }
-                console.log("Ignoring types for PII == " + pii_rejection_ignore_list)
+                log.debug("Ignoring types for PII == " + pii_rejection_ignore_list)
                 pii_rejection_ignore_list = pii_rejection_ignore_list.toLowerCase().split(",")
 
                 return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && pii_rejection_ignore_list.indexOf(entity.Type.toLowerCase()) == -1).length > 0;;
 
             }catch(exception)
             {
-                console.log("Warning: Exception while trying to detect PII with Comprehend. Skipping...");
-                console.log("Exception " + exception);
+                log.warn("Exception while trying to detect PII with Comprehend. Skipping...");
+                log.warn("Exception " + exception);
                 return false;
             }
     

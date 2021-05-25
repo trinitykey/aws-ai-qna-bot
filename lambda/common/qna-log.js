@@ -15,6 +15,8 @@ function _getCallerInfo(callLevel) {
   };
 }
 
+
+
 function verbose(message,params={}) {
   params.message = message
   _log("VERBOSE", params, 4);
@@ -45,6 +47,20 @@ function fatal(message,params={}) {
   _log("FATAL", params, 4);
 }
 
+/* Sends logs to stdout/CloudWatch Logs 
+  logLevel - VERBOSE,DEBUG,INFO,WARN,ERROR,FATAL 
+  params
+    - settings
+      - REDACT_VERIFIED_USER_INFO (true|false) - redact properties that may contain PII when the user is logged in
+      - REDACT_ALL_USER_INFO (true|false) -- redact all properties that may contain PII
+    - message - the log message. This will be passed in as a separate parameter by one of the exported log functions
+    - req - the request object. The properties listed in the 'redactedUserProperties' will be redacted based on the above settings
+    - res - the response object. The properties listed in the 'redactedUserProperties' will be redacted based on the above settings
+    - messageParams - any JavaScript object that should be logged
+    - PII - a JS string or object that should be redacted or logged based on the setting
+
+
+*/
 function _log(logLevel, params, callLevel = 3) {
   settings = params.settings != undefined ? params.settings : _.get(req,"_settings")
 
@@ -98,10 +114,21 @@ function _log(logLevel, params, callLevel = 3) {
       _.set(loggedResponse, property, "xxxxxxx");
     }
   }
-
+  logMessage.logLevel = logLevel;
+  logMessage.settingLogLevel = settingLogLevel
   logMessage.request = loggedRequest;
   logMessage.response = loggedResponse;
   logMessage.message = params.message;
+  logMessage.messageParams = params.messageParams
+  if(params.PII){
+    if(shouldRedact)
+    {
+      logMessage.PII = "xxxxxxx"
+    }
+    else{
+      logMessage.PII = params.PII
+    }
+  }
 
   console.log(JSON.stringify(logMessage));
 }

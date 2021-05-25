@@ -3,6 +3,9 @@ var util=require('./util')
 const lexRouter=require('./lexRouter');
 const specialtyBotRouter=require('./specialtyBotRouter');
 
+var log = require("qna-log.js")
+
+
 /**
  * This function identifies and invokes a lambda function that either queries elasticsearch for a
  * document to serve as an answer or will farm out to other alternate handling mechanisms (lambdas)
@@ -33,8 +36,12 @@ const specialtyBotRouter=require('./specialtyBotRouter');
  * @returns {Promise<any>}
  */
 module.exports=async function query(req,res) {
-    console.log("Entry REQ:", JSON.stringify(req, null, 2));
-    console.log("Entry RES:", JSON.stringify(res, null, 2));
+
+    var logSettings = {
+        req: req,
+        res: res,
+        settings: _.get(req,"_settings")
+    }
 
     /* These session variables may exist from a prior interaction with QnABot. They are
        used to control behavior of this function and divert the function away from the normal
@@ -54,13 +61,16 @@ module.exports=async function query(req,res) {
     let chainingConfig = _.get(req,"session.qnabotcontext.elicitResponse.chainingConfig", undefined);
 
     if (specialtyBot) {
-        console.log('Handling specialtyBot');
+        log.info('Handling specialtyBot',logSettings);
         let resp = await specialtyBotRouter.routeRequest(req, res, specialtyBot, specialtyBotAlias);
         if (resp.res.session.specialtyBotProgress === 'Complete' ||
             resp.res.session.specialtyBotProgress === 'Failed') {
             // Specialty bot has completed. See if we need to using chaining to go to another question
             if (chainingConfig) {
-                console.log("Conditional chaining: " + chainingConfig);
+                logSettings.messageParams = chainingConfig;
+                log.info("Conditional chaining: ",logSettings);
+                logSettings.messageParams = undefined;
+
                 // chainingConfig will be used in Query Lambda function
                 const arn = util.getLambdaArn(process.env.LAMBDA_DEFAULT_QUERY);
                 const postQuery = await util.invokeLambda({
@@ -70,24 +80,32 @@ module.exports=async function query(req,res) {
                 });
                 // specialtyBot processing is done. Remove the flag for now.
                 _.set(postQuery, 'res.session.qnabotcontext.specialtyBotProgress', undefined);
-                console.log("After chaining the following response is being made: " + JSON.stringify(postQuery,null,2));
+                logSettings.PII = postQuery
+
+                log.info("After chaining the following response is being made: ",logSettings);
+                logSettings.PII = undefined;
                 return postQuery;
             } else {
                 // no chaining. continue on with response from standard fulfillment path.
                 _set(res,'session.qnabotcontext.specialtyBotProgress', undefined);
             }
         }
-        console.log("No chaining. The following response is being made: " + JSON.stringify(resp,null,2));
+        logSettings.PII = resp
+        log.info("No chaining. The following response is being made: ",logSettings);
+        logSettings.PII = resp
         return resp;
     } else if (elicitResponse) {
-        console.log('Handling elicitResponse');
+        log.info('Handling elicitResponse',logSettings);
         let resp = await lexRouter.elicitResponse(req,res, elicitResponse);
         let progress = _.get(resp,"res.session.qnabotcontext.elicitResponse.progress", undefined);
         if (progress === 'Fulfilled' || progress === 'ReadyForFulfillment' || progress === 'Failed') {
             console.log("Bot was fulfilled");
             // LexBot has completed. See if we need to using chaining to go to another question
             if (chainingConfig) {
-                console.log("Conditional chaining: " + chainingConfig);
+                logSettings.messageParams = chainingConfig
+                log.info("Conditional chaining: ",logSettings);
+                logSettings.messageParams = undefined
+
                 // chainingConfig will be used in Query Lambda function
                 const arn = util.getLambdaArn(process.env.LAMBDA_DEFAULT_QUERY);
                 const postQuery = await util.invokeLambda({
@@ -97,14 +115,18 @@ module.exports=async function query(req,res) {
                 });
                 // elicitResponse processing is done. Remove the flag for now.
                 _.set(postQuery,'res.session.qnabotcontext.elicitResponse.progress',undefined);
-                console.log("After chaining the following response is being made: " + JSON.stringify(postQuery,null,2));
+                logSettings.PII = postQuery
+                log.info("After chaining the following response is being made: ",logSettings);
+                logSettings.PII = undefined
                 return postQuery;
             } else {
                 // no chaining. continue on with response from standard fulfillment path.
                 _.set(res,'session.qnabotcontext.elicitResponse.progress',undefined);
             }
         }
-        console.log("No chaining. The following response is being made: " + JSON.stringify(resp,null,2));
+        logSettings.PII = resp
+        log.info("No chaining. The following response is being made: ",logSettings);
+        loggSettings.PII = undefined
         return resp;
     }
 
@@ -166,7 +188,8 @@ module.exports=async function query(req,res) {
         _.set(postQuery,'res.session.qnabotcontext.specialtyBotName', specialtybot_name);
         _.set(postQuery,'res.session.qnabotcontext.specialtyBotAlias', specialtybot_alias);
     }
-
-    console.log("Standard path return from 3_query: " + JSON.stringify(postQuery, null, 2));
+    logSettings.PII = postQuery
+    logInfo("Standard path return from 3_query: ",logSettings);
+    logSettings.PII = undefined
     return postQuery;
 }
