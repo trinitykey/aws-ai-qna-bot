@@ -37,9 +37,9 @@ function warn(message,params={}) {
   _log("WARN", params, 4);
 }
 
-function error(message,params={}) {
+function error(message,params={},err,stack) {
   params.message = message
-  _log("ERROR", params.req, params, 4);
+  _log("ERROR", params, 4);
 }
 
 function fatal(message,params={}) {
@@ -58,11 +58,9 @@ function fatal(message,params={}) {
     - res - the response object. The properties listed in the 'redactedUserProperties' will be redacted based on the above settings
     - messageParams - any JavaScript object that should be logged
     - PII - a JS string or object that should be redacted or logged based on the setting
-
-
 */
+
 function _log(logLevel, params, callLevel = 3) {
-  settings = params.settings != undefined ? params.settings : _.get(req,"_settings")
 
   var callerInfo = _getCallerInfo(callLevel);
   var logLevels = ["VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"];
@@ -90,8 +88,9 @@ function _log(logLevel, params, callLevel = 3) {
   var logMessage = {};
   var loggedRequest = _.clone(params.req);
   var loggedResponse = _.clone(params.res);
+  var loggedEvent = _.clone(params.lexV1Event)
 
-  var redactedUserProperties = [
+  var redactedRequestResponseProperties = [
     "sessionAttributes.qnabotcontext",
     "currentIntent.slots",
     "currentIntent.slotDetails",
@@ -99,8 +98,13 @@ function _log(logLevel, params, callLevel = 3) {
     "recentItemSummaryView.slots",
     "session.qnabotcontext",
     "question",
-    "session.qnabotcontext.previous.q",
+    "session.qnabotcontext.previous.q"
+    
   ];
+
+  var redactedLexV1EventProperties = [
+    "currentIntent.slotDetails.originalValue"
+  ]
 
   if (messageLogLevel >= 1) {
     _.set(loggedRequest,"_settings","xxxxxxx");
@@ -109,9 +113,12 @@ function _log(logLevel, params, callLevel = 3) {
   logMessage.callerInfo = callerInfo;
 
   if (shouldRedact) {
-    for (const property of redactedUserProperties) {
+    for (const property of redactedRequestResponseProperties) {
       _.set(loggedRequest, property, "xxxxxxx");
       _.set(loggedResponse, property, "xxxxxxx");
+    }
+    for(const property of redactedLexV1EventProperties){
+      _.set(loggedEvent,property,"xxxxxxx") 
     }
   }
   logMessage.logLevel = logLevel;
