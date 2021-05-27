@@ -98,8 +98,9 @@ function _log(logLevel, params, callLevel = 3) {
     "recentItemSummaryView.slots",
     "session.qnabotcontext",
     "question",
-    "session.qnabotcontext.previous.q"
-    
+    "session.qnabotcontext.previous.q",
+    "_event.slotDetails.slot.originalValue",
+    "_event.inputTranscript"
   ];
 
   var redactedLexV1EventProperties = [
