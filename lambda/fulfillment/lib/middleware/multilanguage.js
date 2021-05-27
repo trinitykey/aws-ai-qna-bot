@@ -1,6 +1,8 @@
 const Promise = require('bluebird')
 const _ = require('lodash')
 const AWS = require('aws-sdk');
+var log = require("qna-log.js")
+
 
 async function get_userLanguages(inputText) {
     const params = {
@@ -11,48 +13,66 @@ async function get_userLanguages(inputText) {
     return languages;
 }
 
-async function get_terminologies(sourceLang) {
+async function get_terminologies(sourceLang,settings) {
+    var logSettings = {
+        settings: settings
+    }
     const translate = new AWS.Translate();
-    console.log("Getting registered custom terminologies");
+    log.info("Getting registered custom terminologies",logSettings);
     const configuredTerminologies = await translate.listTerminologies({}).promise();
-    console.log("terminology response " + JSON.stringify(configuredTerminologies));
+    logSettings.messageParams = configuredTerminologies
+    log.info("terminology response ",logSettings);
     const sources = configuredTerminologies["TerminologyPropertiesList"].filter(t => t["SourceLanguageCode"] == sourceLang).map(s => s.Name);
-    console.log("Filtered Sources " + JSON.stringify(sources));
+    logSettings.messageParams = sources
+    log.info("Filtered Sources " + JSON.stringify(sources));
     return sources;
 }
 
 async function get_translation(inputText, sourceLang, targetLang, req) {
+    var logSettings = {
+        settings: req._settings,
+        req:req
+    }
     const customTerminologyEnabled = _.get(req._settings, "ENABLE_CUSTOM_TERMINOLOGY") == true;
-    console.log("get translation request " + JSON.stringify(inputText));
     const params = {
         SourceLanguageCode: sourceLang, /* required */
         TargetLanguageCode: targetLang, /* required */
         Text: inputText, /* required */
     };
-    console.log("get_translation:", targetLang, "InputText: ", inputText);
+    logSettings.PII = params;
+    log.info("get_translation:", logSettings);
     if (targetLang === sourceLang) {
-        console.log("get_translation: source and target are the same, translation not required." + inputText);
+        log.info("get_translation: source and target are the same, translation not required.",logSettings);
         return inputText;
     }
+    logSettings.PII = undefined
     if (customTerminologyEnabled) {
-        console.log("Custom terminology enabled");
+        log.info("Custom terminology enabled",logSettings);
         const customTerminologies = await get_terminologies(sourceLang);
-        console.log("Using custom terminologies " + JSON.stringify(customTerminologies));
+        log.messageParams = customTerminologies
+        log.info("Using custom terminologies ",logSettings);
         params["TerminologyNames"] = customTerminologies;
     }
     const translateClient = new AWS.Translate();
     try {
-        console.log("Fulfillment params " + JSON.stringify(params));
+        logSettings.PII = params
+        log.info("Fulfillment params ",logSettings);
         const translation = await translateClient.translateText(params).promise();
-        console.log("Translation response " + JSON.stringify(translation));
+        logSettings.PII = translation
+        log.info("Translation response ",logSettings);
         return translation.TranslatedText;
     } catch (err) {
-        console.log("warning - error during translation. Returning: " + inputText);
+        logSettings.error = e
+        log.error("Error during translation. Returning: ",logSettings);
         return inputText;
     }
 }
 
 function set_userLocale(Languages, userPreferredLocale, defaultConfidenceScore, req) {
+    var logSettings = {
+        settings: req._settings,
+        req:req
+    }
     let locale = '';
     let userDetectedLocaleConfidence = Languages.Languages[0].Score;
     let userDetectedLocale = Languages.Languages[0].LanguageCode;
@@ -60,10 +80,10 @@ function set_userLocale(Languages, userPreferredLocale, defaultConfidenceScore, 
     let i = 0;
     let userDetectedSecondaryLocale;
 
-    console.log("preferred lang", userPreferredLocale);
+    log.info("preferred lang", userPreferredLocale);
     for (i = 0; i <= Languages.Languages.length - 1; i++) {
-        console.log("found lang: " + Languages.Languages[i].LanguageCode);
-        console.log("score: " + Languages.Languages[i].Score);
+        log.info("found lang: " + Languages.Languages[i].LanguageCode,logSettings);
+        log.info("score: " + Languages.Languages[i].Score,logSettings);
         if (Languages.Languages[i].LanguageCode === userPreferredLocale) {
             isPreferredLanguageDetected = true;
             userDetectedLocale = Languages.Languages[i].LanguageCode;
@@ -72,10 +92,10 @@ function set_userLocale(Languages, userPreferredLocale, defaultConfidenceScore, 
             userDetectedSecondaryLocale = Languages.Languages[i].LanguageCode;
         }
     }
-    console.log("isPreferredLanguageDetected", isPreferredLanguageDetected);
-    console.log("detected locale", userDetectedLocale);
-    console.log("detected secondary locale", userDetectedSecondaryLocale);
-    console.log("detected Confidence", userDetectedLocaleConfidence);
+    log.info("isPreferredLanguageDetected "+ isPreferredLanguageDetected,logSettings);
+    log.info("detected locale " + userDetectedLocale,logSettings);
+    log.info("detected secondary locale" +userDetectedSecondaryLocale,logSettings);
+    log.info("detected Confidence " + userDetectedLocaleConfidence,logSettings);
 
     _.set(req.session, "userDetectedLocale", userDetectedLocale);
     _.set(req.session, "userDetectedLocaleConfidence", userDetectedLocaleConfidence);
@@ -87,52 +107,61 @@ function set_userLocale(Languages, userPreferredLocale, defaultConfidenceScore, 
 
     if (userPreferredLocale && userDetectedLocale !== '') {
         locale = userPreferredLocale;
-        console.log("set user preference as language to use: ", locale);
+        log.info("set user preference as language to use: " + locale,logSettings);
     } else if ((userPreferredLocale === undefined || userPreferredLocale === '') && userDetectedLocaleConfidence <= defaultConfidenceScore) {
         locale = 'en'; // default to english
-        console.log("Detected language confidence too low, defaulting to English");
+        log.info("Detected language confidence too low, defaulting to English ",logSettings);
     } else {
         locale = userDetectedLocale;
-        console.log("set detected language as language to use: ", locale);
+        log.info("set detected language as language to use: "+ locale,logSettings);
     }
     return locale;
 }
 
 async function set_translated_transcript(locale, req) {
+    var logSettings = {
+        settings: req._settings,
+        req:req
+    }
     const SessionAttributes = _.get(req, 'session');
     const detectedLocale = SessionAttributes.userDetectedLocale;
     const detectedSecondaryLocale = SessionAttributes.userDetectedSecondaryLocale;
 
     if ( ! req.question.toLowerCase().startsWith("qid::")) {
         if (locale === 'en' && detectedLocale === 'en' && detectedSecondaryLocale === undefined) {
-            console.log("No translation - english detected");
+            log.info("No translation - english detected",logSettings);
         } else if (locale === 'en' && detectedLocale === 'en' && detectedSecondaryLocale) {
-            console.log("translate to english using secondary detected locale:  ", req.question);
+            log.PII = req.question
+            log.info("translate to english using secondary detected locale:  ", logSettings);
             const translation = await get_translation(req.question, detectedSecondaryLocale, 'en',req);
 
             _.set(req, "_translation", translation);
             _.set(req, "question", translation);
-            console.log("Overriding input question with translation: ", req.question);
+            log.info("Overriding input question with translation: ", logSettings);
         }  else if (locale !== '' && locale.charAt(0) !== '%' && detectedLocale && detectedLocale !== '') {
-            console.log("Confidence in the detected language high enough.");
+            log.info("Confidence in the detected language high enough.",logSettings);
             const translation = await get_translation(req.question, detectedLocale, 'en',req);
 
             _.set(req, "_translation", translation);
             _.set(req, "question", translation);
-            console.log("Overriding input question with translation: ", req.question);
+            log.info("Overriding input question with translation: ", logSettings);
         }  else {
-            console.log ('not possible to perform language translation')
+            logSettings.PII = undefined
+            log.info ('not possible to perform language translation',logSettings)
         }
     } else {
-        console.log("Question targeting specified Qid (starts with QID::) - skip translation");
+        log.info("Question targeting specified Qid (starts with QID::) - skip translation",logSettings);
     }
 
 }
 
 exports.set_multilang_env = async function (req) {
     // Add QnABot settings for multilanguage support
-    console.log("Entering multilanguage Middleware");
-    console.log("req:", req);
+    var logSettings = {
+        settings: req._settings,
+        req:req
+    }
+    log.info("Entering multilanguage Middleware",logSettings);
 
     let userLocale = '';
     const defaultConfidenceScore = req._settings.MINIMUM_CONFIDENCE_SCORE;
