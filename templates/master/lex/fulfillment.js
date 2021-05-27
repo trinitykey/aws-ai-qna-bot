@@ -38,6 +38,9 @@ module.exports = {
         "S3Key": { "Fn::Sub": "${BootstrapPrefix}/lambda/fulfillment.zip" },
         "S3ObjectVersion": { "Ref": "FulfillmentCodeVersion" }
       },
+      "Layers":[
+        {"Ref":"QnABotLambdaLayer"}
+      ],
       "Environment": {
         "Variables": Object.assign({
           ES_TYPE: { "Fn::GetAtt": ["Var", "QnAType"] },
@@ -230,4 +233,3 @@ module.exports = {
     }
   }
 }
-
