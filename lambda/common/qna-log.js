@@ -99,8 +99,8 @@ function _log(logLevel, params, callLevel = 3) {
     "session.qnabotcontext",
     "question",
     "session.qnabotcontext.previous.q",
-    "_event.slotDetails.slot.originalValue",
-    "_event.inputTranscript"
+    "slotDetails.slot.originalValue",
+    "inputTranscript"
   ];
 
   var redactedLexV1EventProperties = [
@@ -116,6 +116,7 @@ function _log(logLevel, params, callLevel = 3) {
   if (shouldRedact) {
     for (const property of redactedRequestResponseProperties) {
       _.set(loggedRequest, property, "xxxxxxx");
+      _.set(loggedRequest,"_event."+property,"xxxxxxx")
       _.set(loggedResponse, property, "xxxxxxx");
     }
     for(const property of redactedLexV1EventProperties){

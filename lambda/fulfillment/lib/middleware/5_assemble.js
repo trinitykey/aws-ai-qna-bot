@@ -3,6 +3,8 @@ var lex=require('./lex')
 var alexa=require('./alexa')
 var _=require('lodash')
 var util=require('./util')
+var log = require("qna-log.js")
+
 
 function sms_hint(req,res) {
     var hint = "";
@@ -13,7 +15,7 @@ function sms_hint(req,res) {
             var hours = req._userInfo.TimeSinceLastInteraction / 36e5;
             if (hours >= interval_hrs) {
                 hint = hint_message;
-                console.log("Appending hint to SMS answer: ", hint);
+                log.info("Appending hint to SMS answer: "+ hint);
             }
         }
     }
@@ -30,9 +32,12 @@ function split_message(message) {
 }
 
 function connect_response(req, res) {
+    var logSettings = {
+        settings: req._settings
+    }
     if (req._clientType == "LEX.AmazonConnect.Voice") {
         if (_.get(req,"_settings.CONNECT_ENABLE_VOICE_RESPONSE_INTERRUPT")) {
-            console.log("CONNECT_ENABLE_VOICE_RESPONSE_INTERRUPT is true. splitting response.")
+            log.info("CONNECT_ENABLE_VOICE_RESPONSE_INTERRUPT is true. splitting response.",logSettings)
             // split multi sentence responses.. First sentence stays in response, remaining sentences get prepended to next prompt session attribute.
             let nextPromptVarName = _.get(req,"_settings.CONNECT_NEXT_PROMPT_VARNAME",'nextPrompt') ;
             let message = res.message ;
@@ -50,8 +55,14 @@ function connect_response(req, res) {
                 res.message = "<speak>" + a[0] + "</speak>" ;
                 _.set(res.session,nextPromptVarName, "<speak>" + a[1] + " " + prompt + "</speak>");
             }
-            console.log("Response message:", res.message);
-            console.log("Reponse session var:", nextPromptVarName, ":", _.get(res.session,nextPromptVarName)) ;
+            logSettings.PII = res.meessage
+            log.info("Response message:", logSettings);
+            logSettings.messageParams = {
+                nextPromptVarName:nextPromptVarName,
+                nextPromptVarNameValue:  _.get(res.session,nextPromptVarName)
+            }
+            logSettings.PII = res.message
+            log.info("Reponse session var:",logSettings) ;
         }
     }
     return res ;
