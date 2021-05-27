@@ -86,9 +86,9 @@ function _log(logLevel, params, callLevel = 3) {
   }
 
   var logMessage = {};
-  var loggedRequest = _.clone(params.req);
-  var loggedResponse = _.clone(params.res);
-  var loggedEvent = _.clone(params.lexV1Event)
+  var loggedRequest = _.cloneDeep(params.req);
+  var loggedResponse = _.cloneDeep(params.res);
+  var loggedEvent = _.cloneDeep(params.lexV1Event)
 
   var redactedRequestResponseProperties = [
     "sessionAttributes.qnabotcontext",
@@ -100,7 +100,11 @@ function _log(logLevel, params, callLevel = 3) {
     "question",
     "session.qnabotcontext.previous.q",
     "slotDetails.slot.originalValue",
-    "inputTranscript"
+    "inputTranscript",
+    "result.a",
+    "result.answersource",
+    "result.plainMesage",
+    "out.dialogAction.content"
   ];
 
   var redactedLexV1EventProperties = [
