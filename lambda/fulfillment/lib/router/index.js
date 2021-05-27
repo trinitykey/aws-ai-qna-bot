@@ -1,5 +1,8 @@
 var Promise=require('bluebird')
 var _=require('lodash')
+var log = require("qna-log.js")
+var utils = require("utilities.js")
+
 
 module.exports=class router {
     constructor(){
@@ -7,13 +10,20 @@ module.exports=class router {
     }
 
     async start(event,callback){
-        console.log("Request:"+JSON.stringify(event,null,2))
+        var logSettings = {
+            req: event,
+            settings: utils.get_settings()
+        }
+
+        log.info("start processing",logSettings)
         try{
             var res=await this._walk( {_event:event})
-            console.log("final:",JSON.stringify(res,null,2))
+            logSettings.res = res
+            log.info("final:",logSettings)
             callback(null,res)
         }catch(e){
-            console.log("throwing response:",JSON.stringify(e))
+            logSettings.error = e
+            log.error("throwing response:",logSettings)
             if(e.action==='END'){
                 callback(null)
             }else if(e.action==="RESPOND"){

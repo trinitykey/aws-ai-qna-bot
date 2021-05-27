@@ -21,7 +21,7 @@ async function update_userInfo(res,req) {
         Item: res._userInfo,
     };
     logSettings.PII = params
-    log,info("Saving response user info to DynamoDB: ", logSettings);
+    log.info("Saving response user info to DynamoDB: ", logSettings);
     var ddbResponse={}
     try {
         ddbResponse = await docClient.put(params).promise();

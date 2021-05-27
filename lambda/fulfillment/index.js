@@ -13,6 +13,9 @@ License for the specific language governing permissions and limitations under th
 var lib='./lib/middleware'
 var router=new (require('./lib/router'))()
 var fs=require('fs')
+var utils = require("utilities.js")
+
+
 
 const filter = text => {
     if (process.env.DISABLECLOUDWATCHLOGGING === "true") {

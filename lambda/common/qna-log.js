@@ -102,7 +102,6 @@ function _log(logLevel, params, callLevel = 3) {
     "slotDetails.slot.originalValue",
     "inputTranscript",
     "result.a",
-    "result.answersource",
     "result.plainMesage",
     "out.dialogAction.content"
   ];
