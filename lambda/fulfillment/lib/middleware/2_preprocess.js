@@ -3,6 +3,9 @@ var Promise=require('bluebird');
 var util=require('./util');
 var jwt=require('./jwt');
 var AWS=require('aws-sdk');
+var log = require("qna-log.js")
+var qnaUtils = require("utilities.js")
+
 
 async function get_userInfo(userId, idattrs) {
     var default_userInfo = {
@@ -17,14 +20,14 @@ async function get_userInfo(userId, idattrs) {
             'UserId': userId
         },
     };
-    console.log("Getting user info for user: ", userId, "from DynamoDB table: ", usersTable);
+    log.info("Getting user info for user: ", userId, "from DynamoDB table: ", usersTable);
     var ddbResponse = {};
     try {
         ddbResponse = await docClient.get(params).promise();
     }catch(e){
-        console.log("DDB Exception caught.. can't retrieve userInfo: ", e)
+        log.error("DDB Exception caught.. can't retrieve userInfo: ", e)
     }
-    console.log("DDB Response: ", ddbResponse);
+    log.debug("DDB Response: ", ddbResponse);
     var req_userInfo = _.get(ddbResponse,"Item",default_userInfo);
     // append user identity attributes if known
     if (_.get(idattrs,'preferred_username')) {
@@ -50,7 +53,11 @@ async function get_userInfo(userId, idattrs) {
     var lastSeen = Date.parse(req_userInfo.LastSeen || "1970/1/1 12:00:00");
     var timeSinceLastInteraction = Math.abs(now - lastSeen)/1000; // seconds
     _.set(req_userInfo, 'TimeSinceLastInteraction', timeSinceLastInteraction);
-    console.log("Request User Info: ", req_userInfo);
+    var params = {
+        "PII":req_userInfo
+    }
+
+    log.info("Request User Info: ", params);
     return req_userInfo;
 }
 
@@ -60,26 +67,32 @@ async function update_userInfo(userId, req_userInfo) {
     res_userInfo.FirstSeen = req_userInfo.FirstSeen || dt.toString();
     res_userInfo.LastSeen = dt.toString();
     res_userInfo.InteractionCount = req_userInfo.InteractionCount + 1;
-    console.log("Response User Info: ", res_userInfo);
+    var params = {
+        "PII":req_userInfo
+    }
+
+    log.info("Request User Info: ", params);
     return res_userInfo;
 }
 
 const comprehend_client = new AWS.Comprehend();
 
-const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ignore_list) => {
+const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ignore_list,settings) => {
+    var logSettings = {
+        settings: settings
+    }
 
-
-    console.log("Testing redaction ")
+    log.info("Testing redaction ",logSettings)
     if(piiRegex){
         let re = new RegExp(piiRegex,"g");
         let redacted_text = text.replace(re,"XXXXXX");
-        console.log(`redacted_text ${redacted_text} text ${text}`)
+        log.info(`redacted_text ${redacted_text} text ${text}`)
         var result = redacted_text != text;
-        console.log(`Is Redacted ${result}`)
+        log.info(`Is Redacted ${result}`)
         if(result) //if the regex was returned. No need to call Comprehend
             return result;
     } else {
-        console.log("Warning: No value found for setting  PII_REJECTION_REGEX not using REGEX Matching")
+        log.warn("Warning: No value found for setting  PII_REJECTION_REGEX not using REGEX Matching",logSettings)
     }
     if(useComprehendForPII){
         var params = {
@@ -89,21 +102,25 @@ const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ign
             try
             {
                 var comprehendResult = await comprehend_client.detectPiiEntities(params).promise();
-                console.log(JSON.stringify(comprehendResult) + "entity count == " + comprehendResult.Entities.length )
+                logSettings.PII = {
+                    comprehendResut:comprehendResult
+                }
+
+                log.debug("entity count == " + comprehendResult.Entities.length,logSettings )
                 if(!("Entities" in comprehendResult) ||  comprehendResult.Entities.length == 0)
                 {
-                    console.log("No PII found by Comprehend")
+                    log.info("No PII found by Comprehend",logSettings)
                     return false;
                 }
-                console.log("Ignoring types for PII == " + pii_rejection_ignore_list)
+                log.debug("Ignoring types for PII == " + pii_rejection_ignore_list,logSettings)
                 pii_rejection_ignore_list = pii_rejection_ignore_list.toLowerCase().split(",")
 
                 return comprehendResult.Entities.filter(entity => entity.Score > 0.90 && pii_rejection_ignore_list.indexOf(entity.Type.toLowerCase()) == -1).length > 0;;
 
             }catch(exception)
             {
-                console.log("Warning: Exception while trying to detect PII with Comprehend. Skipping...");
-                console.log("Exception " + exception);
+                log.warn("Exception while trying to detect PII with Comprehend. Skipping...");
+                log.warn("Exception " + exception);
                 return false;
             }
     
@@ -116,7 +133,11 @@ const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ign
 
 
 module.exports=async function preprocess(req,res){
-
+    var logSettings={
+        req: req,
+        res: res,
+        settings: req._settings
+    }
     // lex-web-ui: If idtoken session attribute is present, decode it
     var idtoken = _.get(req,'session.idtokenjwt');
     var idattrs={"verifiedIdentity":"false"};
@@ -124,9 +145,10 @@ module.exports=async function preprocess(req,res){
         var decoded = jwt.decode(idtoken);
         if (decoded) {
             idattrs = _.get(decoded,'payload');
-            console.log("Decoded idtoken:",idattrs);
+            logSettings.messageParams = {decodedIdToken: idattrs}
+            log.info("",logSettings);
+            logSettings.messageParams = undefined
             var kid = _.get(decoded,'header.kid');
-            console.log()
             var default_jwks_url = [_.get(req,'_settings.DEFAULT_USER_POOL_JWKS_URL')];
             var identity_provider_jwks_url = _.get(req,'_settings.IDENTITY_PROVIDER_JWKS_URLS');
             if (identity_provider_jwks_url && identity_provider_jwks_url.length) {
@@ -137,17 +159,21 @@ module.exports=async function preprocess(req,res){
                 }
             }
             var urls = default_jwks_url.concat(identity_provider_jwks_url);
-            console.log("Attempt to verify idtoken using jwks urls:",urls);
+            logSettings.messageParams = {url: urls}
+            log.info("Attempt to verify idtoken using jwks urls:",logSettings);
+            logSettings.messageParams = undefined
             var verified_url = await jwt.verify(idtoken,kid,urls) ;
             if (verified_url) {
                 _.set(idattrs,'verifiedIdentity',"true");
-                console.log("Verified identity with:",verified_url);
+                logSettings.messageParams = {url: verified_url}
+                log.info("Verified identity with:",logSettings);
+                logSettings.messageParams = undefined
             } else {
                 _.set(idattrs,'verifiedIdentity',"false");
-                console.log("Unable to verify identity for any configured IdP jwks urls");
+                log.warn("Unable to verify identity for any configured IdP jwks urls",logSettings);
             }     
         } else {
-            console.log("Invalid idtokenjwt - cannot decode");
+            log.warn("Invalid idtokenjwt - cannot decode",logSettings);
         }
     }
     // Do we need to enforce authentication?
@@ -155,24 +181,23 @@ module.exports=async function preprocess(req,res){
         if ( _.get(idattrs, 'verifiedIdentity',"false") != "true") {
             // identity is not verified
             // reset question to the configured no_verified_identity question
-            console.log("Missing or invalid idtokenjwt - ENFORCE_VERIFIED_IDENTITY is true - seeting question to NO_VERIFIED_IDENTITY_QUESTION") ;
+            log.warn("Missing or invalid idtokenjwt - ENFORCE_VERIFIED_IDENTITY is true - seeting question to NO_VERIFIED_IDENTITY_QUESTION") ;
             req.question = _.get(req, '_settings.NO_VERIFIED_IDENTITY_QUESTION','no_verified_identity') ;
         }
     }
     if(_.get(req,'_settings.PII_REJECTION_ENABLED')){
-        console.log("Checking for PII")
-        console.log("Request--" + JSON.stringify(req))
+        log.info("Checking for PII",logSettings)
         if(_.get(req,"_settings.PII_REJECTION_QUESTION")){
             if(await isPIIDetected(req.question,
                 _.get(req,"_settings.PII_REJECTION_WITH_COMPREHEND"), 
                 _.get(req,"_settings.PII_REJECTION_REGEX"),
-                _.get(req,"_settings.PII_REJECTION_IGNORE_TYPES"))){
-                console.log("Found PII or REGEX Match - setting question to PII_REJECTION_QUESTION") ;
+                _.get(req,"_settings.PII_REJECTION_IGNORE_TYPES"),settings)){
+                log.info("Found PII or REGEX Match - setting question to PII_REJECTION_QUESTION",logSettings) ;
                 req.question = _.get(req, '_settings.PII_REJECTION_QUESTION') ;
             }
         }
     }else{
-        console.log("Not checking for PII " + _.get(req,'_settings.PII_REJECTION_ENABLED'));
+        log.info("Not checking for PII " + _.get(req,'_settings.PII_REJECTION_ENABLED'));
     }
 
     // Add _userInfo to req, from UsersTable
@@ -189,7 +214,7 @@ module.exports=async function preprocess(req,res){
     // by default, remove tokens from session event to prevent accidental logging of token values
     // to keep tokens, create custom setting "REMOVE_ID_TOKENS_FROM_SESSION" and set to "false"
     if (_.get(req, '_settings.REMOVE_ID_TOKENS_FROM_SESSION',true)) {
-        console.log("Removing id tokens from session event: idtokenjwt, accesstokenjwt, refreshtoken") ;
+        log.info("Removing id tokens from session event: idtokenjwt, accesstokenjwt, refreshtoken") ;
         delete req.session.idtokenjwt ;
         delete req.session.accesstokenjwt ;
         delete req.session.refreshtoken ;
