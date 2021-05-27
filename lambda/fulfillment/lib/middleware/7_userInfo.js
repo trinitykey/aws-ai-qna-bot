@@ -4,8 +4,15 @@ var alexa=require('./alexa')
 var _=require('lodash')
 var util=require('./util')
 var AWS=require('aws-sdk');
+var log = require("qna-log.js")
 
-async function update_userInfo(res) {
+
+async function update_userInfo(res,req) {
+    var logSettings = {
+        req: req,
+        res: res,
+        settings: req._settings
+    }
     var dt = new Date();
     var usersTable = process.env.DYNAMODB_USERSTABLE;
     var docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
@@ -13,19 +20,27 @@ async function update_userInfo(res) {
         TableName: usersTable,
         Item: res._userInfo,
     };
-    console.log("Saving response user info to DynamoDB: ", params);
+    logSettings.PII = params
+    log,info("Saving response user info to DynamoDB: ", logSettings);
     var ddbResponse={}
     try {
         ddbResponse = await docClient.put(params).promise();
     }catch(e){
-        console.log("ERROR: DDB Exception caught - can't save userInfo: ", e)
+        logSettings.error = e
+        log.error("ERROR: DDB Exception caught - can't save userInfo: ",logSettings)
     }
-    console.log("DDB Response: ", ddbResponse);
+    logSettings.messageParams = ddbResponse
+    log.info("DDB Response: ", logSettings);
     return ddbResponse;
 }
 
 module.exports=async function userInfo(req,res){
-    console.log("Entering userInfo Middleware")
-    await update_userInfo(res);
+    var logSettings = {
+        req: req,
+        res: res,
+        settings: req._settings
+    }
+    log.info("Entering userInfo Middleware",logSettings)
+    await update_userInfo(res,req);
     return {req,res}
 }
