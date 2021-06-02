@@ -24,12 +24,18 @@ module.exports=Promise.resolve(require('../master')).then(function(base){
         "ClientURL",
         "DashboardURL",
         "UserPoolURL",
-        "BotName",
-        "BotAlias",
-        "Intent",
-        "IntentFallback",
-        "DefaultSettingsSSMParameterName",
-        "CustomSettingsSSMParameterName"
+        "LexV1BotName",
+        "LexV1BotAlias",
+        "LexV1Intent",
+        "LexV1IntentFallback",
+        "LexV2BotName",
+        "LexV2BotId",
+        "LexV2BotAlias",
+        "LexV2BotAliasId",
+        "LexV2Intent",
+        "LexV2IntentFallback",
+        "LexV2BotLocaleIds",
+        "FeedbackSNSTopic"
     ])
     base.Parameters=_.pick(base.Parameters,[
         "Email",
@@ -39,6 +45,8 @@ module.exports=Promise.resolve(require('../master')).then(function(base){
         "ElasticSearchNodeCount",
         "KibanaDashboardRetentionMinutes",
         "PublicOrPrivate",
+        "LexV2BotLocaleIds",
+        "LexBotVersion",
         "XraySetting"
     ]);
     base.Metadata = {
@@ -70,6 +78,14 @@ module.exports=Promise.resolve(require('../master')).then(function(base){
                         "ElasticSearchNodeCount",
                         "Encryption",
                         "KibanaDashboardRetentionMinutes"
+                   ]
+                },
+                {
+                   "Label": {
+                        "default": "Amazon LexV2"
+                   },
+                   "Parameters": [
+                        "LexV2BotLocaleIds"
                    ]
                 }
             ]

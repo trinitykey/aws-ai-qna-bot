@@ -519,7 +519,7 @@ module.exports = async function (req, res) {
     const elicitResponseChainingConfig = _.get(res, "session.qnabotcontext.elicitResponse.chainingConfig", undefined);
     const elicitResponseProgress = _.get(res, "session.qnabotcontext.elicitResponse.progress", undefined);
     let hit = undefined;
-    if (elicitResponseChainingConfig && (elicitResponseProgress === 'Fulfilled' || elicitResponseProgress === 'ReadyForFulfillment' || elicitResponseProgress === 'Failed' )) {
+    if (elicitResponseChainingConfig && (elicitResponseProgress === 'Fulfilled' || elicitResponseProgress === 'ReadyForFulfillment' || elicitResponseProgress === 'Close' || elicitResponseProgress === 'Failed' )) {
         // elicitResponse is finishing up as the LexBot has fulfilled its intent.
         // we use a fakeHit with either the Bot's message or an empty string.
         let fakeHit = {};
@@ -548,7 +548,7 @@ module.exports = async function (req, res) {
         // translate response
         var usrLang = 'en';
         if (_.get(req._settings, 'ENABLE_MULTI_LANGUAGE_SUPPORT')) {
-            usrLang = _.get(req, 'session.userLocale');
+            usrLang = _.get(req, 'session.qnabotcontext.userLocale');
             if (usrLang != 'en') {
                 console.log("Autotranslate hit to usrLang: ", usrLang);
                 hit = await translate.translate_hit(hit, usrLang,req);

@@ -28,20 +28,46 @@ module.exports={
         "#bot-editor:bot=",{"Ref":"LexBot"}
       ]]}
     },
-    "BotName":{
+    "LexV1BotName":{
+        "Condition": "CreateLexV1Bots",
         "Value":{"Ref":"LexBot"}
     },
-    "BotAlias":{
+    "LexV1BotAlias":{
+        "Condition": "CreateLexV1Bots",
         "Value":{"Ref":"VersionAlias"}
     },
-    "SlotType":{
+    "LexV1SlotType":{
+        "Condition": "CreateLexV1Bots",
         "Value":{"Ref":"SlotType"}
     },
-    "Intent":{
+    "LexV1Intent":{
+        "Condition": "CreateLexV1Bots",
         "Value":{"Ref":"Intent"}
     },
-    "IntentFallback":{
+    "LexV1IntentFallback":{
+        "Condition": "CreateLexV1Bots",
         "Value":{"Ref":"IntentFallback"}
+    },
+    "LexV2BotName":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botName"]}
+    },
+    "LexV2BotId":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botId"]}
+    },
+    "LexV2BotAlias":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botAlias"]}
+    },
+    "LexV2BotAliasId":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botAliasId"]}
+    },
+    "LexV2Intent":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botIntent"]}
+    },
+    "LexV2IntentFallback":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botIntentFallback"]}
+    },
+    "LexV2BotLocaleIds":{
+        "Value":{"Fn::GetAtt":["LexV2Bot","botLocaleIds"]}
     },
     "DashboardURL":{
         "Value":{"Fn::Join":["",[
@@ -122,6 +148,9 @@ module.exports={
     },
     "DefaultUserPoolJwksUrlParameterName": {
       "Value":{"Ref":"DefaultUserPoolJwksUrl"}
+    },
+    "FeedbackSNSTopic": {
+        "Value":{"Fn::GetAtt": ["ExamplesStack", "Outputs.FeedbackSNSTopic"]}
     }
   },
   "Parameters": {
@@ -186,12 +215,25 @@ module.exports={
         "Default":"4"
     },
     "VPCSubnetIdList" : {
-        "Description" : "Subnet IDs", "Type": "CommaDelimitedList",
+        "Type": "CommaDelimitedList",
+        "Description" : "Subnet IDs", 
         "Default": ""
     },
     "VPCSecurityGroupIdList": {
-        "Description" : "Security Group IDs", "Type": "CommaDelimitedList",
+        "Type": "CommaDelimitedList",
+        "Description" : "Security Group IDs", 
         "Default": ""
+    },
+    "LexV2BotLocaleIds":{
+        "Description" : "Languages for QnABot voice interaction using LexV2. Specify as a comma separated list of valid Locale IDs - see https://docs.aws.amazon.com/lexv2/latest/dg/how-languages.html", 
+        "Type": "String",
+        "Default": "en_US,es_US"
+    },
+    "LexBotVersion":{
+        "Description" : "Lex versions to use for QnABot. Select 'LexV2 Only' to install QnABot in AWS reqions where LexV1 is not supported.",
+        "Type":"String",
+        "AllowedValues" : ["LexV1 and LexV2", "LexV2 Only"],
+        "Default":"LexV1 and LexV2"
     },
     "XraySetting":{
         "Type":"String",
@@ -215,6 +257,7 @@ module.exports={
     "BuildExamples":{"Fn::Equals":[{"Ref":"BuildExamples"},"TRUE"]},
     "CreateDomain":{"Fn::Equals":[{"Ref":"ElasticsearchName"},"EMPTY"]},
     "DontCreateDomain":{"Fn::Not":[{"Fn::Equals":[{"Ref":"ElasticsearchName"},"EMPTY"]}]},
+    "CreateLexV1Bots":{"Fn::Equals":[{"Ref":"LexBotVersion"},"LexV1 and LexV2"]},
     "VPCEnabled": { "Fn::Not": [
               { "Fn::Equals": [ "",
                       { "Fn::Join": [ "", { "Ref": "VPCSecurityGroupIdList" } ] }
