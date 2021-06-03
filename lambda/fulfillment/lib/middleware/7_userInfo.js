@@ -20,7 +20,7 @@ function getDistinctValues(list,objectId,sortField){
 }
 async function update_userInfo(res) {
     var topics = _.get(res,"_userInfo.recentTopics",[])
-    var distinctTopics= getDistinctValues(topics,"id").slice(0,10)
+    var distinctTopics= getDistinctValues(topics,"topic").slice(0,10)
     _.set(res,"_userInfo.recentTopics",distinctTopics)
     console.log(res._userInfo)
     var userId = _.get(res,"_userInfo.UserName") && _.get(res,"_userInfo.isVerifiedIdentity") == "true" ? _.get(res,"_userInfo.UserName") : _.get(res,"_userInfo.UserId");

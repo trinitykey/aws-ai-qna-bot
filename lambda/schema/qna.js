@@ -61,13 +61,6 @@ module.exports={
             title:"Topic",
             propertyOrder: 5
         },
-        label:{
-            type:"string",
-            description:"Assign a label to this item, to support dynamically generated response cards (most recent items Lambda hook))",
-            title:"Label",
-            propertyOrder: 6
-
-        },
         r:{
             title:"Response card",
             description:"Attach images and/or buttons to your answer. A reponse card must have an imageUrl or at least one button.",

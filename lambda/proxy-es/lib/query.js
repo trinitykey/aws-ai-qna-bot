@@ -273,10 +273,7 @@ async function get_hit(req, res) {
                 res._userInfo.recentTopics = []
             }
             res._userInfo.recentTopics.push({
-                id: _.get(hit, "t") + "_" + _.get(hit, "label"),
                 topic: _.get(hit, "t"),
-                label: _.get(hit, "label"),
-                qid: _.get(hit,"qid"),
                 dateTime: (new Date()).toISOString()
             })
         }
