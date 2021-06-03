@@ -15,7 +15,7 @@ function getDistinctValues(list,objectId,sortField){
         }
         return a["sortField"] < b["sortField"] ? 1 : -1
     });
-    distinctItems = distinctItems.map(id => sortedItems.filter( item => item[objectId] == id )[0])
+    distinctItems = distinctItems.map(id => sortedItems.filter( item => item[objectId] == id ).reverse()[0])
     return distinctItems
 }
 async function update_userInfo(res) {

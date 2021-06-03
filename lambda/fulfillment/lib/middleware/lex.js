@@ -105,6 +105,8 @@ exports.parse=async function(req){
 }
 
 function filterButtons(response) {
+    console.log("Before filterButtons " + JSON.stringify(response))
+
     var filteredButtons = _.get(response.card,"buttons",[]);
     if (filteredButtons) {
         for (var i = filteredButtons.length - 1; i >= 0; --i) {
@@ -114,6 +116,7 @@ function filterButtons(response) {
         }
         _.set(response.card,"buttons",filteredButtons) ;
     }
+    console.log("Response from filterButtons " + JSON.stringify(response))
     return response;
 }
 

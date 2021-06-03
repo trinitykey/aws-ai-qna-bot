@@ -299,7 +299,7 @@ async function get_hit(req, res) {
         //  - improved predictability of document chaining behavior.. each doc's lambda is run as it is chained
         //  - autotranslation is now applied to lambda hook responses by default when response is assembled
         // optional setting to turn off this behaviour if it causes problems, and revert to old way
-        if (_.get(req, '_settings.RUN_LAMBDAHOOK_FROM_QUERY_STEP', true)) { 
+        if (_.get(req, '_settings.RUN_LAMBDAHOOK_FROM_QUERY_STEP', true)) {// && res['got_hits'] == 1) { //
             var lambdaHook = _.get(hit, "l");
             if (lambdaHook) {
                 var payload;

@@ -112,7 +112,6 @@ module.exports=async function assemble(req,res){
     )
 
     resetAttributes(req,res);
-
     switch(req._type){
         case 'LEX':
             res.out=lex.assemble(req,res)
