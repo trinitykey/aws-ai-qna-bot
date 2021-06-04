@@ -212,7 +212,7 @@ def lexV2_qna_intent_slot(slotName, intentId, slotTypeId, botId, botVersion, loc
             ], 
             "maxRetries": 4
         }, 
-        "slotConstraint": "Required"
+        "slotConstraint": "Optional"
     }
     slotParams = {
         "slotName": slotName,
@@ -563,7 +563,7 @@ def build_all(utterances):
         "botAliasId": botAliasId,
         "botIntent": INTENT,
         "botIntentFallback": "FallbackIntent",
-        "botLocaleIds": ", ".join(LEXV2_BOT_LOCALE_IDS)
+        "botLocaleIds": ",".join(LEXV2_BOT_LOCALE_IDS)
     }
     status("READY")
     return result

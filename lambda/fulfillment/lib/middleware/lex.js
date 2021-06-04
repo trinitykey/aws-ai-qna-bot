@@ -41,7 +41,7 @@ function parseLexV1Event(event) {
         _lexVersion: "V1",
         _userId: _.get(event, "userId", "Unknown Lex User"),
         intentname: _.get(event, 'sessionState.intent.name'),
-        question: _.get(event, 'inputTranscript'),
+        question: _.get(event, 'inputTranscript').trim(),
         session: _.mapValues(
             _.get(event, 'sessionAttributes', {}),
             x => {
@@ -80,7 +80,7 @@ function parseLexV2Event(event) {
     const mode = _.get(event,"inputMode") ;
     if (mode == "Speech") {
         const lex_locale = _.get(event,'bot.localeId').split("_")[0];
-        out.session.qnabotcontext.userPreferredLocale = lex_locale;
+        _.set(out,"session.qnabotcontext.userPreferredLocale", lex_locale);
         console.log("LexV2 in voice mode - Set userPreferredLocale from lex V2 bot locale:", out.session.qnabotcontext.userPreferredLocale);
     } 
     return out;
@@ -216,12 +216,6 @@ function assembleLexV1Response(response) {
             responseCard: buildResponseCardV1(response)
         })
     };
-    // If in ElicitResponse mode, keep session open by retuning ElicitIntent
-    let qnabotcontext = JSON.parse(response.session.qnabotcontext);
-    if (_.get(qnabotcontext,"elicitResponse.responsebot")) {
-        out.dialogAction.type="ElicitIntent";
-        delete out.dialogAction.fulfillmentState;
-    }
     return out;
 }
 
@@ -250,12 +244,6 @@ function assembleLexV2Response(response) {
             "contentType": "ImageResponseCard",
             "imageResponseCard": imageResponseCardV2            
         };
-    }
-    // If in ElicitResponse mode, keep session open by retuning ElicitIntent
-    let qnabotcontext = JSON.parse(response.session.qnabotcontext);
-    if (_.get(qnabotcontext,"elicitResponse.responsebot")) {
-        out.sessionState.dialogAction.type="ElicitIntent";
-        delete out.dialogAction.intent;
     }
     return out;
 }
