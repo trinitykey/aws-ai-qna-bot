@@ -47,6 +47,10 @@ async function isESonly(req, query_params) {
     if (_.get(query_params, 'topic')!="") {
         return true
     }
+    // setting clientFilterValues should block Kendra FAQ indexing
+    if (_.get(query_params, 'clientFilterValues')!="") {
+        return true
+    }
     //Don't send one word questions to Kendra
     if(query_params.question.split(" ").length  < 2){
         return true;
@@ -209,7 +213,10 @@ async function get_hit(req, res) {
         fuzziness: _.get(req, '_settings.ES_USE_FUZZY_MATCH'),
         es_expand_contractions: _.get(req,'_settings.ES_EXPAND_CONTRACTIONS'),
         kendra_indexes: _.get(req,'_settings.ALT_SEARCH_KENDRA_INDEXES'),
-        minimum_confidence_score: _.get(req,'_settings.ALT_SEARCH_KENDRA_FAQ_CONFIDENCE_SCORE')
+        minimum_confidence_score: _.get(req,'_settings.ALT_SEARCH_KENDRA_FAQ_CONFIDENCE_SCORE'),
+        enable_client_filters: _.get(req, '_settings.ES_ENABLE_CLIENT_FILTERS'),
+        qnaClientFilter: _.get(req, 'session.QNAClientFilter'),
+
 
     };
     var no_hits_question = _.get(req, '_settings.ES_NO_HITS_QUESTION', 'no_hits');
