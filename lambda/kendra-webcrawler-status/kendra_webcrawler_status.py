@@ -72,11 +72,3 @@ def kendra_list_data_source_sync_jobs(IndexId, data_source_id):
     return {"Status": status, "History": result, "DashboardUrl": f'https://console.aws.amazon.com/cloudwatch/home?region={os.environ.get("AWS_REGION")}#dashboards:name={os.environ.get("DASHBOARD_NAME")}'}
     # return status, list of values in result
 
-
-if __name__ == "__main__":
-
-    os.environ["CUSTOM_SETTINGS_PARAM"] = 'CFN-CustomQnABotSettings-4VLlLa3BAFAB'
-    os.environ["DEFAULT_SETTINGS_PARAM"] = 'CFN-DefaultQnABotSettings-J3x2iwsNoWkx'
-    os.environ["DATASOURCE_NAME"] = 'QNABotKendraNativeCrawler-J3x2iwsNoWkx-v2'
-
-    handler(None, None)

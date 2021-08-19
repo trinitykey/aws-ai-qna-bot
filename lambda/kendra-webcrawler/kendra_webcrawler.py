@@ -88,9 +88,10 @@ def kendra_sync_data_source(IndexId, data_source_id):
     return response
 
 
-def kendra_update_data_source(IndexId, data_source_id, URLs):
+def kendra_update_data_source(IndexId, data_source_id, URLs, RoleArn):
     response = client.update_data_source(
         Id=data_source_id,
+        RoleArn=RoleArn,
         IndexId=IndexId,
         Configuration={
             'WebCrawlerConfiguration': {

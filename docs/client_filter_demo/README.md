@@ -2,16 +2,6 @@
 
 The Client Feature branch demonstrates how QnABot's abilities are enhanced when paired with Amazon's LexWebUI project. Client features present a LexWebUI session attribute "QnAClientFilter" that matches a "Client Filter" from question settings to automatically filter QnABot's responses to questions that might be the same or similar for different groups of users talking to the bot.
 
-## Enabling custom settings
-
-QnABot needs the client filter setting to be enabled. Choose **Settings** from the Tools Menu.
-
-![Settings](./settings.png)
-
-Scroll down until you see **ES_ENABLE_CLIENT_FILTERS** in the Settings tab. Change the value to be **true**.
-
-![ES_ENABLE_CLIENT_FILTERS](./es_enable_client_filter.png)
-
 ## Importing the sample question bank
 
 Choose **Import** from the Tools menu.
@@ -41,9 +31,6 @@ Optionally, questions from the demo question bank can be changed or ammended thr
 **QnABot Client**
 
 ![QnABot Client](./qnaclient.png)
-
-### Sample Flow #1: No Filter
-> Note: Regardless of whether the **ES_ENABLE_CLIENT_FILTERS** setting is enabled, QnABot requires client filters in each question for the feature to work as expected. Without additional client features, QnABot questions will answer questions by matching keyword content filters.
 
 
 Please greet the bot in the QnABot Client with **"Hello!"**. Select **"Let me ask questions normally"** to begin.

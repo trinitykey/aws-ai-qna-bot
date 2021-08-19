@@ -59,7 +59,7 @@ function build_query(params) {
       query = query.orQuery(
         'match', match_query
       );
-      if (_.get(params, 'enable_client_filters', false) === true) {
+      
         var qnaClientFilter = _.get(params, 'qnaClientFilter', "");
         query = query.orFilter(
           'bool', {
@@ -88,7 +88,7 @@ function build_query(params) {
             ]
           }
           ).filterMinimumShouldMatch(1);
-      }
+
       query = query.orQuery(
         'nested', {
         score_mode: 'max',
