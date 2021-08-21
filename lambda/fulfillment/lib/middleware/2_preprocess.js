@@ -51,6 +51,8 @@ async function get_userInfo(userId, idattrs) {
     var timeSinceLastInteraction = Math.abs(now - lastSeen)/1000; // seconds
     _.set(req_userInfo, 'TimeSinceLastInteraction', timeSinceLastInteraction);
     console.log("Request User Info: ", req_userInfo);
+    //TODO: KDT Remove This???!!!!
+    _.set(req_userInfo, 'UserId', userId);
     return req_userInfo;
 }
 
@@ -116,7 +118,17 @@ const isPIIDetected = async (text,useComprehendForPII,piiRegex,pii_rejection_ign
 
 
 module.exports=async function preprocess(req,res){
-
+    let prehook = _.get(req,'_settings.LAMBDA_PREPROCESS_HOOK',undefined) || process.env.LAMBDA_PREPROCESS
+    _.set(req,"_fulfillment.step","preprocess")
+    if(prehook){
+        let result = await util.invokeLambda({
+            FunctionName:prehook,
+            req,res
+        })
+        _.set(req,"_fulfillment.step",undefined)
+        req = result.req
+        res = result.res
+    }
     // lex-web-ui: If idtoken session attribute is present, decode it
     var idtoken = _.get(req,'session.idtokenjwt');
     var idattrs={"verifiedIdentity":"false"};
@@ -180,6 +192,9 @@ module.exports=async function preprocess(req,res){
     console.log("userid found",idattrs["cognito:username"],idattrs["verifiedIdentity"])
     var userId = idattrs["cognito:username"] && idattrs["verifiedIdentity"] == "true" ? idattrs["cognito:username"] : req._userId;
     var req_userInfo = await get_userInfo(userId, idattrs);
+    //UserInfo might already be set by preprocessing hook. If it is combine it with what we get from DDB
+    let userInfo = _.get(req,"_userInfo",{})
+    Object.assign(req_userInfo,userInfo )
     _.set(req,"_userInfo", req_userInfo);
     // Add _userInfo to res, with updated timestamps
     // May be further modified by lambda hooks
@@ -219,13 +234,6 @@ module.exports=async function preprocess(req,res){
     _.set(req,"_info.es.type",process.env.ES_TYPE)
     _.set(req,"_info.es.service.qid",process.env.ES_SERVICE_QID)
     _.set(req,"_info.es.service.proxy",process.env.ES_SERVICE_PROXY)
-    
-    if(process.env.LAMBDA_PREPROCESS){
-        return await util.invokeLambda({
-            FunctionName:process.env.LAMBDA_PREPROCESS,
-            req,res
-        })
-    }else{
-        return {req,res}
-    }
+    console.log(req)
+    return {req,res}
 }

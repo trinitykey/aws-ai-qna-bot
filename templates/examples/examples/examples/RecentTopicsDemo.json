@@ -39,26 +39,6 @@
       ]
     },
     {
-      "qid": "RecentTopics.Comprehend",
-      "a": "Amazon Comprehend is a natural-language processing (NLP) service that uses machine learning to uncover information in unstructured data. Instead of combing through documents, the process is simplified and unseen information is easier to understand.",
-      "alt": {
-        "markdown": "Amazon Comprehend is a natural-language processing (NLP) service that uses machine learning to uncover information in unstructured data. Instead of combing through documents, the process is simplified and unseen information is easier to understand.\n\nFor more information about Amazon Comprehend. Click [here](https://aws.amazon.com/comprehend/)"
-      },
-      "t": "Comprehend",
-      "r": {
-        "buttons": [
-          {
-            "text": "Ask another question",
-            "value": "QID::RecentTopics.General.001"
-          }
-        ]
-      },
-      "type": "qna",
-      "q": [
-        "What is Comprehend"
-      ]
-    },
-    {
       "qid": "RecentTopics.ML.001",
       "a": "Choose an item below to find out more about machine learning services AWS offers",
       "t": "Machine Learning",
@@ -86,52 +66,6 @@
       "type": "qna",
       "q": [
         "What Machine Language services does AWS offer"
-      ]
-    },
-    {
-      "qid": "RecentTopics.General.001",
-      "a": "You can either choose from a topic below, choose \"Show My Previous Topics\" to go back to areas we discussed before or ask a question.",
-      "r": {
-        "title": "Start",
-        "buttons": [
-          {
-            "text": "Artificial Intelligence Services",
-            "value": "QID::RecentTopics.AI.001"
-          },
-          {
-            "text": "Machine Learning Services",
-            "value": "QID::RecentTopics.ML.001"
-          },
-          {
-            "text": "Show my Previous Topics",
-            "value": "QID::RecentTopics.PreviousTopics"
-          }
-        ]
-      },
-      "type": "qna",
-      "q": [
-        "Start over"
-      ]
-    },
-    {
-      "qid": "RecentTopics.Start",
-      "a": "Hi. You can ask a question about the following topics",
-      "r": {
-        "title": "top",
-        "buttons": [
-          {
-            "text": "AI Services",
-            "value": "QID::RecentTopics.RecentTopics.AI.001"
-          },
-          {
-            "text": "ML.Services",
-            "value": "QID::RecentTopics.ML.001"
-          }
-        ]
-      },
-      "type": "qna",
-      "q": [
-        "Hello"
       ]
     },
     {
@@ -331,12 +265,79 @@
     {
       "qid": "RecentTopics.Instructions.001",
       "a": "See the instructions",
-      "alt": {
-        "markdown": "Save the following JSON to a file and use the \"Import Settings\" option on the Settings page.\n\n```json\n{\n  \"topic::Comprehend\": \"Amazon Comprehend::Comprehend\",\n  \"topic::Kendra\": \"Amazon Kendra::Kendra\",\n  \"topic::Lex\": \"Amazon Lex::Lex\",\n  \"topic::Polly\": \"Amazon Polly::Polly\",\n  \"topic::SageMaker\": \"Amazon SageMaker::SageMaker\",\n  \"topic::Translate\": \"Amazon Translate::Translate\"\n}\n```\n\nSee [here](https://github.com/aws-samples/aws-ai-qna-bot/blob/master/docs/recent_topics_lambda_hook_example/README.md) for more information."
-      },
       "type": "qna",
       "q": [
         "How do I use this demo?"
+      ]
+    },
+    {
+      "qid": "RecentTopics.General.001",
+      "a": "{{#ifCond UserInfo.recentTopics.0.topic \"==\" undefined}}\nYou can choose one of the topics below or ask a question.\n{{else}}\nYou can either choose one of the topics below,  choose \"show me my previous topics\" or ask a question \n{{/ifCond}}",
+      "r": {
+        "title": "Start",
+        "buttons": [
+          {
+            "text": "Artificial Intelligence Services",
+            "value": "QID::RecentTopics.AI.001"
+          },
+          {
+            "text": "Machine Learning Services",
+            "value": "QID::RecentTopics.ML.001"
+          },
+          {
+            "text": "Show my Previous Topics",
+            "value": "QID::RecentTopics.PreviousTopics"
+          }
+        ]
+      },
+      "type": "qna",
+      "q": [
+        "Start over"
+      ]
+    },
+    {
+      "qid": "RecentTopics.Comprehend",
+      "a": "Amazon Comprehend is a natural-language processing (NLP) service that uses machine learning to uncover information in unstructured data. Instead of combing through documents, the process is simplified and unseen information is easier to understand.",
+      "alt": {
+        "markdown": "Amazon Comprehend is a natural-language processing (NLP) service that uses machine learning to uncover information in unstructured data. Instead of combing through documents, the process is simplified and unseen information is easier to understand.\n\nFor more information about Amazon Comprehend. Click [here](https://aws.amazon.com/comprehend/)"
+      },
+      "t": "Comprehend",
+      "r": {
+        "title": "Comprehend",
+        "buttons": [
+          {
+            "text": "Ask another question",
+            "value": "QID::RecentTopics.General.001"
+          }
+        ]
+      },
+      "type": "qna",
+      "q": [
+        "What is Comprehend"
+      ]
+    },
+    {
+      "qid": "RecentTopics.Start",
+      "a": "Hi. You can ask a question about the following topics.",
+      "alt": {
+        "markdown": "{\n    \"topic::Comprehend\": \"Amazon Comprehend::RecentTopics.Comprehend\",\n    \"topic::Kendra\": \"Amazon Kendra::RecentTopics.Kendra\",\n    \"topic::Lex\": \"Amazon Lex::RecentTopics.Lex\",\n    \"topic::Polly\": \"Amazon Polly::RecentTopics.Polly\",\n    \"topic::SageMaker\": \"Amazon SageMaker::RecentTopics.SageMaker\",\n    \"topic::Translate\": \"Amazon Translate::RecentTopics.Translate\"\n}"
+      },
+      "r": {
+        "title": "top",
+        "buttons": [
+          {
+            "text": "AI Services",
+            "value": "QID::RecentTopics.AI.001"
+          },
+          {
+            "text": "ML.Services",
+            "value": "QID::RecentTopics.ML.001"
+          }
+        ]
+      },
+      "type": "qna",
+      "q": [
+        "Hello"
       ]
     }
   ]

@@ -144,6 +144,12 @@ async function invokeLambda (lambdaRef, req, res) {
         // response is not JSON - noop
     }
     console.log("Lambda returned payload: ", JSON.stringify(payload));
+    console.log("returning from invokeLambda")
+    console.log(JSON.stringify(req))
+    console.log(4)
+    console.log(JSON.stringify(res))
+    console.log(5)
+    console.log(JSON.stringify(payload))
     return [req, res, payload];
 }
 
@@ -304,12 +310,18 @@ async function get_hit(req, res) {
         //  - improved predictability of document chaining behavior.. each doc's lambda is run as it is chained
         //  - autotranslation is now applied to lambda hook responses by default when response is assembled
         // optional setting to turn off this behaviour if it causes problems, and revert to old way
-        if (_.get(req, '_settings.RUN_LAMBDAHOOK_FROM_QUERY_STEP', true)) {// && res['got_hits'] == 1) { //
+        if (_.get(req, '_settings.RUN_LAMBDAHOOK_FROM_QUERY_STEP', true)) {
             var lambdaHook = _.get(hit, "l");
             if (lambdaHook) {
                 var payload;
                 console.log("Invoking Lambda Hook function: ", lambdaHook);
-                [req, res, payload] = await invokeLambda(lambdaHook, req, res);
+                _.set(req,"_fulfillment.step","lambdahook_query")
+
+                let event = await invokeLambda(lambdaHook, req, res);
+                req = event[0]
+                res = event[1]
+                payload = event[2]
+                _.set(req,"_fulfillment.step","")
                 // update hit with values returned in res by lambda hook
                 _.set(hit, "a", _.get(res,"message",""));
                 var markdown = _.get(res,"session.appContext.altMessages.markdown","");
