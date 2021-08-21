@@ -24,7 +24,7 @@ def handler(event, context):
         kendra_sync_data_source(IndexId, data_source_id)
         create_dashboard(IndexId, data_source_id)
     else:
-        kendra_update_data_source(IndexId, data_source_id, URLs)
+        kendra_update_data_source(IndexId, data_source_id, URLs,RoleArn)
         kendra_sync_data_source(IndexId, data_source_id)
     return {"IndexId": IndexId, "DataSourceId": data_source_id}
 

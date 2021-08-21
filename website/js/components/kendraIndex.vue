@@ -18,11 +18,11 @@ v-container#page-import(column, grid-list-md)
           v-btn#btnKendraStartIndex(
             :disabled="status == 'PENDING' || status == 'STARTING' || !kendraIndexerEnabled",
             @click="start"
-          ) Start Indexing
+          ) Start Crawling
         v-flex(v-if="history && history.length > 0")
           v-card-title.headline Kendra Indexing History
           v-card-text
-            h3 <a :href="dashboard_url" target="_blank">View in CloudWatch </a>
+            h3 <a :href="dashboard_url" target="_blank">View Web Crawling Errors in CloudWatch </a>
 
           v-card-text
             table.table
@@ -161,6 +161,9 @@ module.exports = {
       return result;
     },
     convertToLocalTime: function (isoDateTime) {
+      if(isoDateTime == ""){
+        return ""
+      }
       var isoDateTime = new Date(isoDateTime);
       return (
         isoDateTime.toLocaleDateString() +
