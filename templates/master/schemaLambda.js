@@ -18,6 +18,12 @@ module.exports={
             "S3Key": {"Fn::Sub":"${BootstrapPrefix}/lambda/schema.zip"},
             "S3ObjectVersion":{"Ref":"SchemaLambdaCodeVersion"}
         },
+        Environment: {
+          Variables: {
+            DEFAULT_SETTINGS_PARAM: {Ref: "DefaultQnABotSettings"},
+            CUSTOM_SETTINGS_PARAM: {Ref: "CustomQnABotSettings"}
+          }
+        },
         "Handler": "index.handler",
         "MemorySize": "128",
         "Role": {"Fn::GetAtt": ["SchemaLambdaRole","Arn"]},
@@ -39,6 +45,26 @@ module.exports={
         }]
       }
     },
+    SchemaLambdaPolicy: {
+      Type: "AWS::IAM::ManagedPolicy",
+      Properties: {
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: [
+                "ssm:GetParameter",
+              ],
+              Resource: [
+                {"Fn::Join": ["", ["arn:aws:ssm:", {"Ref": "AWS::Region"}, ":", {"Ref": "AWS::AccountId"}, ":parameter/", {"Ref": "CustomQnABotSettings"}]]},
+                {"Fn::Join": ["", ["arn:aws:ssm:", {"Ref": "AWS::Region"}, ":", {"Ref": "AWS::AccountId"}, ":parameter/", {"Ref": "DefaultQnABotSettings"}]]},
+              ],
+            },
+          ],
+        },
+      },
+    },
     "SchemaLambdaRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -59,7 +85,8 @@ module.exports={
           "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
           "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
           "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
-          {"Ref":"QueryPolicy"}
+          {"Ref":"QueryPolicy"},
+          {"Ref":"SchemaLambdaPolicy"}
         ]
       }
     }
