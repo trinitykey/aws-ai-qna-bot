@@ -38,6 +38,9 @@ module.exports = {
     "Type": "AWS::Serverless::Function",
     "Properties": {
       "AutoPublishAlias":"live",
+      "DeploymentPreference":{
+        "Type":"AllAtOnce"
+      },
       "CodeUri": {
         "Bucket": { "Ref": "BootstrapBucket" },
         "Key": { "Fn::Sub": "${BootstrapPrefix}/lambda/fulfillment.zip" },
