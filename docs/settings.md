@@ -27,7 +27,7 @@
 | ALT_SEARCH_KENDRA_TOP_ANSWER_MESSAGE | string | Heading when the [top answer](https://docs.aws.amazon.com/kendra/latest/dg/response-types.html) is found by Amazon Kendra
 | ALT_SEARCH_KENDRA_ANSWER_MESSAGE | string | Heading when a [Document](https://docs.aws.amazon.com/kendra/latest/dg/response-types.html) is returned by Amazon Kendra
 | ALT_SEARCH_KENDRA_RESPONSE_TYPES | Comma separated list. One or more valid [Kendra response type](https://docs.aws.amazon.com/kendra/latest/dg/response-types.html) | Kendra fallback will only return responses of the listed types
-| ALT_SEARCH_KENDRA_USE_FULL_MESSAGE_FOR_SSML | boolean | If set to "true", the full text of the Kendra fallback response will be sent when using voice.
+| ALT_SEARCH_KENDRA_ABBREVIATE_MESSAGE_FOR_SSML | boolean | If a set to "true", an abbreviate Kendra response will be sent via voice.  If set to "false", the full text of the Kendra fallback response will be sent when using voice.
 | KENDRA_FAQ_INDEX | Kendra Index Id | Kendra Index to use sync Elastic Search questions and answers
 | KENDRA_FAQ_CONFIG_MAX_RETRIES | integer | Number of times to retry syncing FAQ's when a throttling error occurs
 | KENDRA_FAQ_CONFIG_RETRY_DELAY | integer | Amount of time to wait in seconds between attempts to retry syncing

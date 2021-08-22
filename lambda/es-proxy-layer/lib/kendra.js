@@ -327,7 +327,7 @@ async function routeKendraRequest(event, context) {
     let faqanswerMessage = event.req["_settings"]["ALT_SEARCH_KENDRA_FAQ_MESSAGE"] + "\n\n"; //'Answer from Amazon Kendra FAQ.'
     let faqanswerMessageMd = event.req["_settings"]["ALT_SEARCH_KENDRA_FAQ_MESSAGE"]  == "" ? "" : `*${event.req["_settings"]["ALT_SEARCH_KENDRA_FAQ_MESSAGE"]}* \n`
     let minimum_score = event.req["_settings"]["ALT_SEARCH_KENDRA_FALLBACK_CONFIDENCE_SCORE"];
-    let useFullMessageForSpeech = _.get(event.req,"_settings.ALT_SEARCH_KENDRA_USE_FULL_MESSAGE_FOR_SSML","false").toString().toUpperCase() === "TRUE"
+    let useFullMessageForSpeech = _.get(event.req,"_settings.ALT_SEARCH_KENDRA_ABBREVIATE_MESSAGE_FOR_SSML","true").toString().toUpperCase() === "FALSE"
     let speechMessage = "";
     let helpfulLinksMsg = 'Source Link';
     let maxDocumentCount = _.get(event.req,'_settings.ALT_SEARCH_KENDRA_MAX_DOCUMENT_COUNT',2);
