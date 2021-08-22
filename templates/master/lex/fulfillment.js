@@ -34,6 +34,15 @@ module.exports = {
       "BuildDate": (new Date()).toISOString()
     }
   },
+  "FulfillmentLambdaVersion":{
+    "Type":"Custom::LambdaVersion",
+    "Properties":{
+      ServiceToken: {"Fn::GetAtt":["CreateLambdaVersionLambda","Arn"]},
+      FunctionName: {Ref:"FulfillmentLambda"},
+      Alias:"live",
+      Nounce: (new Date()).toISOString()
+    }
+  },
   "FulfillmentLambda": {
     "Type": "AWS::Serverless::Function",
     "Properties": {
