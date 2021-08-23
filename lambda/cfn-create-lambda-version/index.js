@@ -22,13 +22,14 @@ exports.handler = async (event, context) => {
 
     if(aliases["Aliases"].filter(x => x.Name == alias).length == 0){
         await lambda.createAlias({
+            Name: alias,
             FunctionName:lambdaName,
             FunctionVersion:data.Version
         }).promise()
     }else{
         let params = {
             FunctionName: lambdaName,
-            Name: event.ResourceProperties.Alias,
+            Name: alias,
             FunctionVersion: data.Version
         }
         await lambda.updateAlias(params).promise();
