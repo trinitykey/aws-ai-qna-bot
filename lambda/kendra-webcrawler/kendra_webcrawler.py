@@ -1,11 +1,56 @@
 import os
 import json
 import boto3
+import re
+import datetime
+import calendar
+
 
 
 client = boto3.client('kendra')
 ssm = boto3.client('ssm')
 cloudwatch = boto3.client('cloudwatch')
+
+
+def create_cron_expression(schedule):
+    print(schedule)
+    rate_regex = "(rate\()(\d\s(?:day|week|month)s?)(\))"
+    match = re.match(rate_regex, schedule)
+    if match is not None:
+        schedule = match.group(2)
+        unit = schedule.split(" ")[1]
+    elif schedule in ["daily", "weekly", "monthly"]:
+        unit = schedule
+    elif schedule is None or schedule == "":
+        return ""
+    else:
+        return "INVALID"
+
+    now = datetime.datetime.now()
+    cron = [None] * 6
+    cron[0] = now.minute
+    cron[1] = now.hour
+    cron[2] = now.day if now.day < 27 else 27
+    cron[3] = now.month
+    cron[4] = calendar.day_name[datetime.datetime.today().weekday()][0:3].upper()
+    cron[5] = "*"
+
+    if unit in ["day", "days","daily"]:
+        cron[2] = "*"
+        cron[3] = "*"
+        cron[4] = "?"
+
+    if unit in ["week", "weeks","weekly"]:
+        cron[2] = "?"
+        cron[3] = "*"
+
+    if unit in ["month", "months","monthly"]:
+        cron[3] = "*"
+        cron[4] = "?"
+
+    cron = "cron(" + " ".join(map(lambda i: str(i),cron)) + ")"
+    print(cron)
+    return cron
 
 
 def handler(event, context):
@@ -17,14 +62,20 @@ def handler(event, context):
     settings = get_settings()
     IndexId = settings['KENDRA_WEB_PAGE_INDEX']
     URLs = settings['KENDRA_INDEXER_URLS'].replace(' ', '').split(',')
+    schedule = settings["KENDRA_INDEXER_SCHEDULE"]
+
+    schedule = create_cron_expression(schedule)
+    if schedule == "INVALID":
+        schedule = ""
+        
     data_source_id = get_data_source_id(IndexId, Name)
 
     if data_source_id is None:
-        data_source_id = kendra_create_data_source(client, IndexId, Name, Type, RoleArn, Description, URLs)
+        data_source_id = kendra_create_data_source(client, IndexId, Name, Type, RoleArn, Description, URLs, schedule)
         kendra_sync_data_source(IndexId, data_source_id)
         create_dashboard(IndexId, data_source_id)
     else:
-        kendra_update_data_source(IndexId, data_source_id, URLs,RoleArn)
+        kendra_update_data_source(IndexId, data_source_id, URLs, RoleArn, schedule)
         kendra_sync_data_source(IndexId, data_source_id)
     return {"IndexId": IndexId, "DataSourceId": data_source_id}
 
@@ -56,13 +107,14 @@ def get_data_source_id(index_id, data_source_name):
     return None
 
 
-def kendra_create_data_source(client, IndexId, Name, Type, RoleArn, Description, URLs):
+def kendra_create_data_source(client, IndexId, Name, Type, RoleArn, Description, URLs,schedule):
     response = client.create_data_source(
         Name=Name,
         IndexId=IndexId,
         Type=Type,
         RoleArn=RoleArn,
         Description=Description,
+        Schedule = schedule,
         Configuration={
             'WebCrawlerConfiguration': {
                 'Urls': {
@@ -88,10 +140,11 @@ def kendra_sync_data_source(IndexId, data_source_id):
     return response
 
 
-def kendra_update_data_source(IndexId, data_source_id, URLs, RoleArn):
+def kendra_update_data_source(IndexId, data_source_id, URLs, RoleArn,schedule):
     response = client.update_data_source(
         Id=data_source_id,
         RoleArn=RoleArn,
+        Schedule = schedule,
         IndexId=IndexId,
         Configuration={
             'WebCrawlerConfiguration': {
@@ -126,5 +179,4 @@ def create_dashboard(IndexId, data_source_id):
         DashboardBody=dashboard_body
     )
     print(response)
-
 

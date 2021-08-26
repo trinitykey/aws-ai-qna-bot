@@ -535,7 +535,7 @@ async function routeKendraRequest(event, context) {
     }
     var req = event.req;
     if(useFullMessageForSpeech){
-        ssmlMessage = allFilteredMessages.length > 0 ? allFilteredMessages[0] : ssmlMessageqa
+        ssmlMessage = allFilteredMessages.length > 0 ? allFilteredMessages[0] : ssmlMessage
     }
     hit = create_hit(message,markdown,ssmlMessage, foundAnswerCount + foundDocumentCount, debug_results,{
         kendraQueryId: kendraQueryId,

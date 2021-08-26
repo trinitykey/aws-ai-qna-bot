@@ -1,5 +1,7 @@
 var config = require('./config')
 var _ = require('lodash')
+var crypto = require('crypto')
+var fs = require('fs')
 
 var examples = _.fromPairs(require('../../examples/outputs')
   .names
@@ -11,6 +13,24 @@ var responsebots = _.fromPairs(require('../../examples/examples/responsebots-lex
   .map(x => {
     return [x, { "Fn::GetAtt": ["ExamplesStack", `Outputs.${x}`] }]
   }))
+
+const filfillmentZip = (fs.existsSync("../../build/lambda/fulfillment.zip") ? "../../" : "./") + "build/lambda/fulfillment.zip"; 
+const fulfillmentZipDate =  fs.statSync(filfillmentZip).mtime.toISOString()
+const fulfillmentZipDateHash = crypto.createHash("sha256").update(fulfillmentZipDate).digest("hex")
+
+const esProxyLayerZip = (fs.existsSync("../../build/lambda/es-proxy-layer.zip") ? "../../" : "./") + "build/lambda/es-proxy-layer.zip";
+const esProxyLayerZipDate = fs.statSync(esProxyLayerZip).mtime.toISOString()
+const esProxyLayerZipDateHash = crypto.createHash("sha256").update(esProxyLayerZipDate).digest("hex")
+
+const commonModuleLayerZip = (fs.existsSync("../../build/lambda/common-modules-layer.zip") ? "../../" : "./") + "build/lambda/common-modules-layer.zip";
+const commonModulesDate = fs.statSync(commonModuleLayerZip).mtime.toISOString()
+const commonModulesDateHash = crypto.createHash("sha256").update(commonModulesDate).digest("hex")
+
+const awsSdkLayerZip = (fs.existsSync("../../build/lambda/aws-sdk-layer.zip") ? "../../" : "./") + "build/lambda/aws-sdk-layer.zip";
+const awsSdkLayerZipDate = fs.statSync(awsSdkLayerZip).mtime.toISOString()
+const awsSdkZipDateHash = crypto.createHash("sha256").update(awsSdkLayerZipDate).digest("hex")
+
+const fulfillmentHash =  crypto.createHash("sha256").update(fulfillmentZipDateHash + esProxyLayerZipDateHash + awsSdkZipDateHash + commonModulesDateHash).digest("hex")
 
 module.exports = {
   "Alexa": {
@@ -34,22 +54,12 @@ module.exports = {
       "BuildDate": (new Date()).toISOString()
     }
   },
-  "FulfillmentLambdaVersion":{
-    "Type":"Custom::LambdaVersion",
-    "Properties":{
-      ServiceToken: {"Fn::GetAtt":["CreateLambdaVersionLambda","Arn"]},
-      FunctionName: {Ref:"FulfillmentLambda"},
-      Alias:"live",
-      Nounce: (new Date()).toISOString()
-    }
-  },
   "FulfillmentLambda": {
     "Type": "AWS::Serverless::Function",
+    "DependsOn": "FulfillmentCodeVersion",
     "Properties": {
       "AutoPublishAlias":"live",
-      "DeploymentPreference":{
-        "Type":"AllAtOnce"
-      },
+      "AutoPublishCodeSha256": fulfillmentHash,
       "CodeUri": {
         "Bucket": { "Ref": "BootstrapBucket" },
         "Key": { "Fn::Sub": "${BootstrapPrefix}/lambda/fulfillment.zip" },
