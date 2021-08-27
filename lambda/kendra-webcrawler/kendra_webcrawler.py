@@ -5,8 +5,6 @@ import re
 import datetime
 import calendar
 
-
-
 client = boto3.client('kendra')
 ssm = boto3.client('ssm')
 cloudwatch = boto3.client('cloudwatch')
@@ -35,20 +33,20 @@ def create_cron_expression(schedule):
     cron[4] = calendar.day_name[datetime.datetime.today().weekday()][0:3].upper()
     cron[5] = "*"
 
-    if unit in ["day", "days","daily"]:
+    if unit in ["day", "days", "daily"]:
         cron[2] = "*"
         cron[3] = "*"
         cron[4] = "?"
 
-    if unit in ["week", "weeks","weekly"]:
+    if unit in ["week", "weeks", "weekly"]:
         cron[2] = "?"
         cron[3] = "*"
 
-    if unit in ["month", "months","monthly"]:
+    if unit in ["month", "months", "monthly"]:
         cron[3] = "*"
         cron[4] = "?"
 
-    cron = "cron(" + " ".join(map(lambda i: str(i),cron)) + ")"
+    cron = "cron(" + " ".join(map(lambda i: str(i), cron)) + ")"
     print(cron)
     return cron
 
@@ -67,7 +65,7 @@ def handler(event, context):
     schedule = create_cron_expression(schedule)
     if schedule == "INVALID":
         schedule = ""
-        
+
     data_source_id = get_data_source_id(IndexId, Name)
 
     if data_source_id is None:
@@ -107,14 +105,14 @@ def get_data_source_id(index_id, data_source_name):
     return None
 
 
-def kendra_create_data_source(client, IndexId, Name, Type, RoleArn, Description, URLs,schedule):
+def kendra_create_data_source(client, IndexId, Name, Type, RoleArn, Description, URLs, schedule):
     response = client.create_data_source(
         Name=Name,
         IndexId=IndexId,
         Type=Type,
         RoleArn=RoleArn,
         Description=Description,
-        Schedule = schedule,
+        Schedule=schedule,
         Configuration={
             'WebCrawlerConfiguration': {
                 'Urls': {
@@ -140,11 +138,11 @@ def kendra_sync_data_source(IndexId, data_source_id):
     return response
 
 
-def kendra_update_data_source(IndexId, data_source_id, URLs, RoleArn,schedule):
+def kendra_update_data_source(IndexId, data_source_id, URLs, RoleArn, schedule):
     response = client.update_data_source(
         Id=data_source_id,
         RoleArn=RoleArn,
-        Schedule = schedule,
+        Schedule=schedule,
         IndexId=IndexId,
         Configuration={
             'WebCrawlerConfiguration': {
@@ -179,4 +177,3 @@ def create_dashboard(IndexId, data_source_id):
         DashboardBody=dashboard_body
     )
     print(response)
-
